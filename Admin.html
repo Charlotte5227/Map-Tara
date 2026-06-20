@@ -138,15 +138,15 @@
 <body>
 
 <div id="mapContainer">
-  <svg
+   <svg
    version="1.1"
    id="mapSvg"
    width="5000"
    height="2500"
    viewBox="0 0 5000 2500"
    xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns="http://www.w3.org/2500/svg"
-   xmlns:svg="http://www.w3.org/2500/svg">
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
   <defs
      id="defs1" />
   <g
@@ -814,7 +814,7 @@
     const svg = getSvgRoot();
     let g = svg.querySelector("#labels-layer");
     if (!g) {
-      g = document.createElementNS("http://www.w3.org/2500/svg", "g");
+      g = document.createElementNS("http://www.w3.org/2000/svg", "g");
       g.setAttribute("id", "labels-layer");
       svg.appendChild(g);
     }
@@ -843,7 +843,7 @@
     while (labelEl.firstChild) labelEl.removeChild(labelEl.firstChild);
     const lines = (text||'').split('\n');
     lines.forEach((ln, i) => {
-      const tspan = document.createElementNS('http://www.w3.org/2500/svg','tspan');
+      const tspan = document.createElementNS('http://www.w3.org/2000/svg','tspan');
       tspan.setAttribute('x', labelEl.getAttribute('x') || 0);
       tspan.setAttribute('dy', i===0 ? '0em' : '1.05em');
       tspan.textContent = ln;
@@ -853,7 +853,7 @@
 
   function addLabel(name, x, y, size = DEFAULT_LABEL_SIZE) {
     const layer = ensureLabelsLayer();
-    const text = document.createElementNS("http://www.w3.org/2500/svg", "text");
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     const id = `label-${Date.now()}-${Math.floor(Math.random()*1e6)}`;
     text.setAttribute("id", id);
     text.setAttribute("class", "label");
