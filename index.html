@@ -151,8 +151,8 @@ svg:active { cursor: grabbing; }
    height="2500"
    viewBox="0 0 5000 2500"
    xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns="http://www.w3.org/2500/svg"
-   xmlns:svg="http://www.w3.org/2500/svg">
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
   <defs
      id="defs1" />
   <g
@@ -656,7 +656,7 @@ svg:active { cursor: grabbing; }
   function ensureLayer(svg, layerId) {
     let layer = svg.querySelector(`#${layerId}`);
     if (!layer) {
-      layer = document.createElementNS("http://www.w3.org/2500/svg", "g");
+      layer = document.createElementNS("http://www.w3.org/2000/svg", "g");
       layer.setAttribute("id", layerId);
       svg.appendChild(layer);
     }
@@ -755,7 +755,7 @@ svg:active { cursor: grabbing; }
   }
 
   function addLabel(layer, textValue, x, y, fontSize = 18){
-    const svgNS = "http://www.w3.org/2500/svg";
+    const svgNS = "http://www.w3.org/2000/svg";
     const text = document.createElementNS(svgNS,"text");
     text.classList.add("label");
     text.setAttribute("x",x);
@@ -776,7 +776,7 @@ svg:active { cursor: grabbing; }
   }
 
   function addProvNumber(layer, textValue, x, y, fontSize = 14) {
-    const svgNS = "http://www.w3.org/2500/svg";
+    const svgNS = "http://www.w3.org/2000/svg";
     const text = document.createElementNS(svgNS, "text");
     text.classList.add("prov-number");
     text.setAttribute("x", x);
@@ -859,7 +859,7 @@ svg:active { cursor: grabbing; }
     svg.setAttribute("height", "2500");
 
     // 現在の非表示状態をPNGに反映させるために、一時的なスタイルをSVG内に注入
-    const exportStyle = document.createElementNS("http://www.w3.org/2500/svg", "style");
+    const exportStyle = document.createElementNS("http://www.w3.org/2000/svg", "style");
     let cssText = "";
     if (!labelsVisible) cssText += ".label { display: none !important; }\n";
     if (!numbersVisible) cssText += ".prov-number { display: none !important; }\n";
