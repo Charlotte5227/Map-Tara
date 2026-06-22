@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>閲覧サイト</title>
 
 <style>
@@ -34,6 +35,10 @@ button:hover {
   transform: scale(1.05); 
   box-shadow: 0 6px 12px rgba(0,0,0,0.25);
 }
+button.active-btn {
+  background: #3b82f6; /* ONの時の色（青） */
+  color: #fff;
+}
 
 #topbar {
   background: #222;
@@ -43,6 +48,32 @@ button:hover {
   flex-wrap: wrap;
   gap: 12px;
   z-index: 10;
+}
+
+/* === 背景地図用のコントロールパネル === */
+#bgMapControls {
+  background: #333;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  z-index: 9;
+  border-top: 1px solid #444;
+}
+.bg-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 6px 15px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+}
+.bg-control input[type="range"] {
+  width: 100px;
+  cursor: pointer;
 }
 
 /* === 地図コンテナ === */
@@ -68,15 +99,20 @@ svg:active { cursor: grabbing; }
   fill: #FEF9DB;
   stroke: #111;
   stroke-width: 1;
-  transition: fill 0.5s ease;
+  transition: fill 0.5s ease, fill-opacity 0.3s ease;
+}
+
+/* 背景地図がONの時は、下の画像が見えるようにプロビ全体を半透明にする */
+svg.bg-active .prov {
+  fill-opacity: 0.6; /* 0.0〜1.0の間で好みの透け具合に調整してください */
 }
 
 /* === ラベルのスタイル === */
 .label {
   font-size: 18px;
   font-weight: 800;
-  fill: #fff;               
-  stroke: #000;             
+  fill: #fff;                
+  stroke: #000;              
   stroke-width: 6px;        
   paint-order: stroke fill; 
   user-select: none;
@@ -135,12 +171,32 @@ svg:active { cursor: grabbing; }
 </style>
 </head>
 <body class="numbers-hidden"> 
+
 <div id="topbar">
+  <button id="btnTopo" onclick="toggleBgMap('topo')">🗺️ 地形図</button>
+  <button id="btnClimate" onclick="toggleBgMap('climate')">🌦️ 気候図</button>
+  <button id="btnRegion" onclick="toggleBgMap('region')">🏷️ 地域名</button>
+  
   <button onclick="zoomIn()">＋ 拡大</button>
   <button onclick="zoomOut()">－ 縮小</button>
   <button onclick="downloadPNG()">PNG保存</button>
   <button id="toggleBtn">国名を非表示</button>
   <button id="toggleNumBtn">番号を表示</button>
+</div>
+
+<div id="bgMapControls" style="display: none;">
+  <div id="ctrl-topo" class="bg-control" style="display:none;">
+    <span>地形図 透明度:</span>
+    <input type="range" id="op-topo" min="0" max="1" step="0.05" value="1" oninput="updateBgOpacity('topo', this.value)">
+  </div>
+  <div id="ctrl-climate" class="bg-control" style="display:none;">
+    <span>気候図 透明度:</span>
+    <input type="range" id="op-climate" min="0" max="1" step="0.05" value="1" oninput="updateBgOpacity('climate', this.value)">
+  </div>
+  <div id="ctrl-region" class="bg-control" style="display:none;">
+    <span>地域名 透明度:</span>
+    <input type="range" id="op-region" min="0" max="1" step="0.05" value="1" oninput="updateBgOpacity('region', this.value)">
+  </div>
 </div>
 
 <div id="mapContainer">
@@ -633,7 +689,6 @@ svg:active { cursor: grabbing; }
 </svg>
 </div>
 
-  
   <div id="statusIndicator">データ同期中...</div>
 
   <div id="sliderContainer">
@@ -644,6 +699,91 @@ svg:active { cursor: grabbing; }
 </div>
   
 <script>
+  // === 背景地図の設定 ===
+  // ※実際に用意した画像ファイル名に書き換えてください。
+  const BG_MAPS = {
+    topo: { url: "topography.png", id: "bg-img-topo" }, 
+    climate: { url: "climate.png", id: "bg-img-climate" },
+    region: { url: "region.png", id: "bg-img-region" }
+  };
+  let activeBgMaps = { topo: false, climate: false, region: false };
+
+  // --- 背景地図関連の関数 ---
+  function ensureBgLayer(svg) {
+    let layer = svg.querySelector("#bg-layer");
+    if (!layer) {
+      layer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      layer.setAttribute("id", "bg-layer");
+      // プロビンスの下（SVGの一番奥）に配置するため、最初の子要素として挿入する
+      svg.insertBefore(layer, svg.firstChild);
+    }
+    return layer;
+  }
+
+  function toggleBgMap(type) {
+    activeBgMaps[type] = !activeBgMaps[type];
+    const svg = document.getElementById("mapSvg");
+    const bgLayer = ensureBgLayer(svg);
+    const ctrlDiv = document.getElementById(`ctrl-${type}`);
+    const btn = document.getElementById(`btn${type.charAt(0).toUpperCase() + type.slice(1)}`);
+
+    if (activeBgMaps[type]) {
+      // ONにした時の処理：画像を作成・表示
+      let img = document.getElementById(BG_MAPS[type].id);
+      if (!img) {
+        img = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        img.setAttribute("id", BG_MAPS[type].id);
+        img.setAttribute("href", BG_MAPS[type].url);
+        // マップの大きさに合わせる（ViewBoxと同じサイズ）
+        img.setAttribute("width", "5000");
+        img.setAttribute("height", "2500");
+        img.setAttribute("x", "0");
+        img.setAttribute("y", "0");
+        img.setAttribute("preserveAspectRatio", "none");
+        bgLayer.appendChild(img);
+      }
+      img.style.display = "block";
+      
+      // 現在のスライダーの値を透明度に適用
+      const slider = document.getElementById(`op-${type}`);
+      img.setAttribute("opacity", slider.value);
+
+      // UIの表示切り替え
+      ctrlDiv.style.display = "flex";
+      btn.classList.add("active-btn");
+    } else {
+      // OFFにした時の処理：画像を非表示
+      const img = document.getElementById(BG_MAPS[type].id);
+      if (img) img.style.display = "none";
+
+      // UIの表示切り替え
+      ctrlDiv.style.display = "none";
+      btn.classList.remove("active-btn");
+    }
+
+    // いずれかの背景地図が表示されているかチェック
+    const isAnyActive = Object.values(activeBgMaps).some(val => val);
+    
+    // スライダー全体の枠を表示/非表示
+    document.getElementById("bgMapControls").style.display = isAnyActive ? "flex" : "none";
+    
+    // 背景が見えるようにプロビンス全体を半透明にするためのクラス付け外し
+    if (isAnyActive) {
+      svg.classList.add("bg-active");
+    } else {
+      svg.classList.remove("bg-active");
+    }
+  }
+
+  // スライダーを動かした時に画像の透明度を変更する処理
+  function updateBgOpacity(type, value) {
+    const img = document.getElementById(BG_MAPS[type].id);
+    if (img) {
+      img.setAttribute("opacity", value);
+    }
+  }
+
+
   // === 設定 ===
   const REFRESH_INTERVAL_MS = 30000; 
   let lastDataHash = "";
