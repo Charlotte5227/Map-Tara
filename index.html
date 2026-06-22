@@ -30,7 +30,6 @@ button {
   box-shadow: 0 4px 6px rgba(0,0,0,0.15);
   transition: all 0.2s ease; 
   touch-action: manipulation;
-  /* ★追加: ボタンが画面幅に合わせて縮むのを防ぐ */
   flex-shrink: 0; 
 }
 button:hover {
@@ -47,25 +46,24 @@ button.active-btn {
   background: #222;
   padding: 15px 20px;
   display: flex;
-  /* ★変更: 折り返しを禁止し、横スクロールを許可 */
   flex-wrap: nowrap; 
   overflow-x: auto; 
   justify-content: flex-start;
   gap: 12px;
   z-index: 10;
-  -webkit-overflow-scrolling: touch; /* スマホでの滑らかなスクロール */
-  scrollbar-width: none; /* Firefox用スクロールバー非表示 */
+  -webkit-overflow-scrolling: touch; 
+  scrollbar-width: none; 
+  touch-action: pan-x; /* ★追加: スマホでの横スワイプを明示的に許可 */
 }
 #topbar::-webkit-scrollbar {
-  display: none; /* Chrome/Safari用スクロールバー非表示 */
+  display: none; 
 }
 
-/* === 背景地図用のコントロールパネル（横スライド対応） === */
+/* === 背景地図用のコントロールパネル === */
 #bgMapControls {
   background: #333;
   padding: 10px 20px;
   display: flex;
-  /* ★変更: スライダーも横スクロール可能に */
   flex-wrap: nowrap;
   overflow-x: auto;
   justify-content: flex-start;
@@ -74,6 +72,7 @@ button.active-btn {
   border-top: 1px solid #444;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  touch-action: pan-x; /* ★追加: 横スワイプ許可 */
 }
 #bgMapControls::-webkit-scrollbar {
   display: none;
@@ -87,12 +86,13 @@ button.active-btn {
   border-radius: 20px;
   font-size: 14px;
   font-weight: bold;
-  /* ★追加: スライダー枠が縮むのを防ぐ */
   flex-shrink: 0;
 }
-.bg-control input[type="range"] {
+/* ★追加: スライダー自体のタッチ・ドラッグ操作を許可 */
+input[type="range"] {
   width: 100px;
   cursor: pointer;
+  touch-action: auto; 
 }
 
 /* === 地図コンテナ === */
@@ -121,9 +121,8 @@ svg:active { cursor: grabbing; }
   transition: fill 0.5s ease, fill-opacity 0.3s ease;
 }
 
-/* ★変更: 「下」に配置される背景地図（地形・気候）がONの時だけ、プロビ全体を半透明にする */
 svg.bg-bottom-active .prov {
-  fill-opacity: 0.6; /* 透け具合はお好みで調整してください */
+  fill-opacity: 0.6; 
 }
 
 /* === ラベルのスタイル === */
@@ -150,16 +149,18 @@ svg.bg-bottom-active .prov {
 }
 .numbers-hidden .prov-number { display: none; }
   
+/* ★変更: 最終更新ステータスを他のUIと被らない「右下」へ移動 */
 #statusIndicator {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  bottom: 15px; 
+  right: 15px;  
   font-size: 12px;
   font-weight: bold;
   color: #555;
-  background: rgba(255, 255, 255, 0.7);
-  padding: 4px 8px;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 6px 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15); /* 少し影をつけて見やすく */
   z-index: 1000;
 }
 
@@ -179,6 +180,7 @@ svg.bg-bottom-active .prov {
   gap: 15px;
   font-weight: bold;
   color: #333;
+  touch-action: auto; /* ★追加: スマホでのスライダー操作を許可 */
 }
 #zoomSlider {
   width: 200px;
@@ -723,8 +725,6 @@ svg.bg-bottom-active .prov {
 </div>
   
 <script>
-  // === 背景地図の設定 ===
-  // layer: 'bottom'（プロビの下） または 'top'（プロビの上・ラベルの下）を指定
   const BG_MAPS = {
     topo: { url: "topography.png", id: "bg-img-topo", layer: "bottom" }, 
     climate: { url: "climate.png", id: "bg-img-climate", layer: "bottom" },
@@ -733,7 +733,6 @@ svg.bg-bottom-active .prov {
   };
   let activeBgMaps = { topo: false, climate: false, region: false, continent: false };
 
-  // --- 背景地図関連の関数 ---
   function ensureBgLayer(svg, type) {
     const layerInfo = BG_MAPS[type];
     const layerId = layerInfo.layer === 'top' ? "bg-layer-top" : "bg-layer-bottom";
@@ -744,7 +743,6 @@ svg.bg-bottom-active .prov {
       layer.setAttribute("id", layerId);
       
       if (layerInfo.layer === 'bottom') {
-        // 【プロビの下敷きにする処理】
         const provs = svg.querySelectorAll(".prov");
         if (provs.length > 0) {
           provs[0].parentNode.insertBefore(layer, provs[0]);
@@ -752,7 +750,6 @@ svg.bg-bottom-active .prov {
           svg.appendChild(layer);
         }
       } else {
-        // 【プロビの上、ラベルの下に滑り込ませる処理】
         const numLayer = svg.querySelector("#numbers-layer");
         const labelLayer = svg.querySelector("#labels-layer");
         
@@ -761,7 +758,7 @@ svg.bg-bottom-active .prov {
         } else if (labelLayer) {
           labelLayer.parentNode.insertBefore(layer, labelLayer);
         } else {
-          svg.appendChild(layer); // どちらも無ければ一旦最後に追加
+          svg.appendChild(layer); 
         }
       }
     }
@@ -771,7 +768,7 @@ svg.bg-bottom-active .prov {
   function toggleBgMap(type) {
     activeBgMaps[type] = !activeBgMaps[type];
     const svg = document.getElementById("mapSvg");
-    const bgLayer = ensureBgLayer(svg, type); // typeを渡して適切なレイヤーを取得
+    const bgLayer = ensureBgLayer(svg, type); 
     const ctrlDiv = document.getElementById(`ctrl-${type}`);
     const btn = document.getElementById(`btn${type.charAt(0).toUpperCase() + type.slice(1)}`);
 
@@ -803,11 +800,9 @@ svg.bg-bottom-active .prov {
       btn.classList.remove("active-btn");
     }
 
-    // いずれかの背景地図が表示されているかチェック
     const isAnyActive = Object.values(activeBgMaps).some(val => val);
     document.getElementById("bgMapControls").style.display = isAnyActive ? "flex" : "none";
     
-    // 「下のレイヤー（地形・気候）」がアクティブな時のみプロビを半透明にする
     const isBottomActive = activeBgMaps.topo || activeBgMaps.climate;
     if (isBottomActive) {
       svg.classList.add("bg-bottom-active");
@@ -823,7 +818,6 @@ svg.bg-bottom-active .prov {
     }
   }
 
-  // === 設定 ===
   const REFRESH_INTERVAL_MS = 30000; 
   let lastDataHash = "";
   let labelsVisible = true;
@@ -845,7 +839,6 @@ svg.bg-bottom-active .prov {
     svg.querySelectorAll(".prov").forEach(p => { p.style.fill = "#FEF9DB"; });
   }
 
-  // === ViewBoxとスライダーの同期 ===
   function updateViewBox(){
     const maxCx = 5000; const minCx = 0;
     const maxCy = 2500; const minCy = 0;
@@ -976,8 +969,6 @@ svg.bg-bottom-active .prov {
       const numbersLayer = ensureLayer(svg, "numbers-layer");
       const labelsLayer = ensureLayer(svg, "labels-layer");
       
-      // レイヤーの重なり順を整える（番号はラベルの下にする）
-      // ※appendChildは既存の要素を一番手前（DOMの最後）に移動させます
       svg.appendChild(numbersLayer);
       svg.appendChild(labelsLayer);
       
@@ -1098,7 +1089,14 @@ svg.bg-bottom-active .prov {
   }
 
   function handleMove(e) {
-    e.preventDefault(); 
+    // ★ここが修正ポイント: マップ操作中（ドラッグorピンチ）でなければ処理を抜ける
+    // これにより、UI部分での横スワイプやスライダーのドラッグが正常に動作します
+    if (!isDragging && !initialPinchDistance) {
+      return;
+    }
+
+    e.preventDefault(); // ここで初めてマップ操作時の不要な画面スクロールを止める
+    
     if (e.touches && e.touches.length === 2 && initialPinchDistance) {
       const currentDistance = getPinchDistance(e.touches);
       const scale = initialPinchDistance / currentDistance;
@@ -1148,6 +1146,7 @@ svg.bg-bottom-active .prov {
   window.addEventListener("mousemove", handleMove, { passive: false });
   window.addEventListener("mouseup", handleEnd);
 
+  // マップ用のタッチ操作は「svg内から始まったもの」だけを取得する
   svg.addEventListener("touchstart", handleStart, { passive: false });
   window.addEventListener("touchmove", handleMove, { passive: false });
   window.addEventListener("touchend", handleEnd);
