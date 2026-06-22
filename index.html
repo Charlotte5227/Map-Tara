@@ -13,8 +13,8 @@ body {
   background: #f0f2f5; 
   display: flex; 
   flex-direction: column; 
-  height: 100vh; /* 画面の高さに合わせる */
-  overflow: hidden; /* 全体のスクロールを無効化 */
+  height: 100vh; 
+  overflow: hidden; 
 }
 
 /* === ボタンのスタイル === */
@@ -30,36 +30,53 @@ button {
   box-shadow: 0 4px 6px rgba(0,0,0,0.15);
   transition: all 0.2s ease; 
   touch-action: manipulation;
+  /* ★追加: ボタンが画面幅に合わせて縮むのを防ぐ */
+  flex-shrink: 0; 
 }
 button:hover {
   transform: scale(1.05); 
   box-shadow: 0 6px 12px rgba(0,0,0,0.25);
 }
 button.active-btn {
-  background: #3b82f6; /* ONの時の色（青） */
+  background: #3b82f6; 
   color: #fff;
 }
 
+/* === 上部バー（横スライド対応） === */
 #topbar {
   background: #222;
-  padding: 15px;
+  padding: 15px 20px;
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
+  /* ★変更: 折り返しを禁止し、横スクロールを許可 */
+  flex-wrap: nowrap; 
+  overflow-x: auto; 
+  justify-content: flex-start;
   gap: 12px;
   z-index: 10;
+  -webkit-overflow-scrolling: touch; /* スマホでの滑らかなスクロール */
+  scrollbar-width: none; /* Firefox用スクロールバー非表示 */
+}
+#topbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari用スクロールバー非表示 */
 }
 
-/* === 背景地図用のコントロールパネル === */
+/* === 背景地図用のコントロールパネル（横スライド対応） === */
 #bgMapControls {
   background: #333;
-  padding: 10px;
+  padding: 10px 20px;
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
+  /* ★変更: スライダーも横スクロール可能に */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  justify-content: flex-start;
   gap: 15px;
   z-index: 9;
   border-top: 1px solid #444;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#bgMapControls::-webkit-scrollbar {
+  display: none;
 }
 .bg-control {
   display: flex;
@@ -70,6 +87,8 @@ button.active-btn {
   border-radius: 20px;
   font-size: 14px;
   font-weight: bold;
+  /* ★追加: スライダー枠が縮むのを防ぐ */
+  flex-shrink: 0;
 }
 .bg-control input[type="range"] {
   width: 100px;
@@ -82,7 +101,7 @@ button.active-btn {
   width: 100%;
   position: relative;
   overflow: hidden;
-  touch-action: none; /* スマホでのブラウザデフォルトスクロールを禁止 */
+  touch-action: none; 
 }
 
 svg { 
@@ -102,9 +121,9 @@ svg:active { cursor: grabbing; }
   transition: fill 0.5s ease, fill-opacity 0.3s ease;
 }
 
-/* 背景地図がONの時は、下の画像が見えるようにプロビ全体を半透明にする */
-svg.bg-active .prov {
-  fill-opacity: 0.6; /* 0.0〜1.0の間で好みの透け具合に調整してください */
+/* ★変更: 「下」に配置される背景地図（地形・気候）がONの時だけ、プロビ全体を半透明にする */
+svg.bg-bottom-active .prov {
+  fill-opacity: 0.6; /* 透け具合はお好みで調整してください */
 }
 
 /* === ラベルのスタイル === */
@@ -166,7 +185,7 @@ svg.bg-active .prov {
   cursor: pointer;
 }
 @media (max-width: 600px) {
-  #zoomSlider { width: 120px; } /* スマホでは少し短く */
+  #zoomSlider { width: 120px; } 
 }
 </style>
 </head>
@@ -187,19 +206,19 @@ svg.bg-active .prov {
 
 <div id="bgMapControls" style="display: none;">
   <div id="ctrl-topo" class="bg-control" style="display:none;">
-    <span>地形図 透明度:</span>
+    <span>地形図:</span>
     <input type="range" id="op-topo" min="0" max="1" step="0.05" value="1" oninput="updateBgOpacity('topo', this.value)">
   </div>
   <div id="ctrl-climate" class="bg-control" style="display:none;">
-    <span>気候図 透明度:</span>
+    <span>気候図:</span>
     <input type="range" id="op-climate" min="0" max="1" step="0.05" value="1" oninput="updateBgOpacity('climate', this.value)">
   </div>
   <div id="ctrl-region" class="bg-control" style="display:none;">
-    <span>地域名 透明度:</span>
+    <span>地域名:</span>
     <input type="range" id="op-region" min="0" max="1" step="0.05" value="1" oninput="updateBgOpacity('region', this.value)">
   </div>
   <div id="ctrl-continent" class="bg-control" style="display:none;">
-    <span>大陸名 透明度:</span>
+    <span>大陸名:</span>
     <input type="range" id="op-continent" min="0" max="1" step="0.05" value="1" oninput="updateBgOpacity('continent', this.value)">
   </div>
 </div>
@@ -705,30 +724,45 @@ svg.bg-active .prov {
   
 <script>
   // === 背景地図の設定 ===
-  // ※実際に用意した画像ファイル名に書き換えてください。
+  // layer: 'bottom'（プロビの下） または 'top'（プロビの上・ラベルの下）を指定
   const BG_MAPS = {
-    topo: { url: "topography.png", id: "bg-img-topo" }, 
-    climate: { url: "climate.png", id: "bg-img-climate" },
-    region: { url: "region.png", id: "bg-img-region" },
-    continent: { url: "continent.png", id: "bg-img-continent" } // ★追加
+    topo: { url: "topography.png", id: "bg-img-topo", layer: "bottom" }, 
+    climate: { url: "climate.png", id: "bg-img-climate", layer: "bottom" },
+    region: { url: "region.png", id: "bg-img-region", layer: "top" },
+    continent: { url: "continent.png", id: "bg-img-continent", layer: "top" }
   };
-  let activeBgMaps = { topo: false, climate: false, region: false, continent: false }; // ★追加
+  let activeBgMaps = { topo: false, climate: false, region: false, continent: false };
 
   // --- 背景地図関連の関数 ---
-  function ensureBgLayer(svg) {
-    let layer = svg.querySelector("#bg-layer");
+  function ensureBgLayer(svg, type) {
+    const layerInfo = BG_MAPS[type];
+    const layerId = layerInfo.layer === 'top' ? "bg-layer-top" : "bg-layer-bottom";
+    let layer = svg.querySelector(`#${layerId}`);
+    
     if (!layer) {
       layer = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      layer.setAttribute("id", "bg-layer");
+      layer.setAttribute("id", layerId);
       
-      // SVG内のプロビンス（.prov）をすべて取得
-      const provs = svg.querySelectorAll(".prov");
-      if (provs.length > 0) {
-        // 「一番最初のプロビンス」の直前に画像レイヤーを挿入する
-        // これにより、海の背景要素などよりも手前、かつ領土より奥に配置されます
-        provs[0].parentNode.insertBefore(layer, provs[0]);
+      if (layerInfo.layer === 'bottom') {
+        // 【プロビの下敷きにする処理】
+        const provs = svg.querySelectorAll(".prov");
+        if (provs.length > 0) {
+          provs[0].parentNode.insertBefore(layer, provs[0]);
+        } else {
+          svg.appendChild(layer);
+        }
       } else {
-        svg.appendChild(layer);
+        // 【プロビの上、ラベルの下に滑り込ませる処理】
+        const numLayer = svg.querySelector("#numbers-layer");
+        const labelLayer = svg.querySelector("#labels-layer");
+        
+        if (numLayer) {
+          numLayer.parentNode.insertBefore(layer, numLayer);
+        } else if (labelLayer) {
+          labelLayer.parentNode.insertBefore(layer, labelLayer);
+        } else {
+          svg.appendChild(layer); // どちらも無ければ一旦最後に追加
+        }
       }
     }
     return layer;
@@ -737,18 +771,16 @@ svg.bg-active .prov {
   function toggleBgMap(type) {
     activeBgMaps[type] = !activeBgMaps[type];
     const svg = document.getElementById("mapSvg");
-    const bgLayer = ensureBgLayer(svg);
+    const bgLayer = ensureBgLayer(svg, type); // typeを渡して適切なレイヤーを取得
     const ctrlDiv = document.getElementById(`ctrl-${type}`);
     const btn = document.getElementById(`btn${type.charAt(0).toUpperCase() + type.slice(1)}`);
 
     if (activeBgMaps[type]) {
-      // ONにした時の処理：画像を作成・表示
       let img = document.getElementById(BG_MAPS[type].id);
       if (!img) {
         img = document.createElementNS("http://www.w3.org/2000/svg", "image");
         img.setAttribute("id", BG_MAPS[type].id);
         img.setAttribute("href", BG_MAPS[type].url);
-        // マップの大きさに合わせる（ViewBoxと同じサイズ）
         img.setAttribute("width", "5000");
         img.setAttribute("height", "2500");
         img.setAttribute("x", "0");
@@ -758,38 +790,32 @@ svg.bg-active .prov {
       }
       img.style.display = "block";
       
-      // 現在のスライダーの値を透明度に適用
       const slider = document.getElementById(`op-${type}`);
       img.setAttribute("opacity", slider.value);
 
-      // UIの表示切り替え
       ctrlDiv.style.display = "flex";
       btn.classList.add("active-btn");
     } else {
-      // OFFにした時の処理：画像を非表示
       const img = document.getElementById(BG_MAPS[type].id);
       if (img) img.style.display = "none";
 
-      // UIの表示切り替え
       ctrlDiv.style.display = "none";
       btn.classList.remove("active-btn");
     }
 
     // いずれかの背景地図が表示されているかチェック
     const isAnyActive = Object.values(activeBgMaps).some(val => val);
-    
-    // スライダー全体の枠を表示/非表示
     document.getElementById("bgMapControls").style.display = isAnyActive ? "flex" : "none";
     
-    // 背景が見えるようにプロビンス全体を半透明にするためのクラス付け外し
-    if (isAnyActive) {
-      svg.classList.add("bg-active");
+    // 「下のレイヤー（地形・気候）」がアクティブな時のみプロビを半透明にする
+    const isBottomActive = activeBgMaps.topo || activeBgMaps.climate;
+    if (isBottomActive) {
+      svg.classList.add("bg-bottom-active");
     } else {
-      svg.classList.remove("bg-active");
+      svg.classList.remove("bg-bottom-active");
     }
   }
 
-  // スライダーを動かした時に画像の透明度を変更する処理
   function updateBgOpacity(type, value) {
     const img = document.getElementById(BG_MAPS[type].id);
     if (img) {
@@ -797,16 +823,14 @@ svg.bg-active .prov {
     }
   }
 
-
   // === 設定 ===
   const REFRESH_INTERVAL_MS = 30000; 
   let lastDataHash = "";
   let labelsVisible = true;
-  let numbersVisible = false; // 初期状態では番号は非表示
+  let numbersVisible = false;
 
   let viewBox = { x: 0, y: 0, w: 5000, h: 2500 };
 
-  // レイヤーの確保
   function ensureLayer(svg, layerId) {
     let layer = svg.querySelector(`#${layerId}`);
     if (!layer) {
@@ -837,7 +861,6 @@ svg.bg-active .prov {
     const svg = document.getElementById("mapSvg");
     svg.setAttribute("viewBox", `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
 
-    // スライダーの更新
     const slider = document.getElementById("zoomSlider");
     if(slider) slider.value = 5000 / viewBox.w;
   }
@@ -860,7 +883,6 @@ svg.bg-active .prov {
   function zoomIn(){ zoom(0.8); }
   function zoomOut(){ zoom(1.25); }
 
-  // スライダー操作処理
   const zoomSlider = document.getElementById("zoomSlider");
   zoomSlider.addEventListener("input", (e) => {
     const scale = parseFloat(e.target.value);
@@ -874,7 +896,6 @@ svg.bg-active .prov {
     updateViewBox();
   });
 
-  // === ボタン切り替え処理 ===
   const toggleBtn = document.getElementById("toggleBtn");
   if (toggleBtn) {
     toggleBtn.addEventListener("click", () => {
@@ -893,7 +914,6 @@ svg.bg-active .prov {
     });
   }
 
-  // === 描画系の処理 ===
   function computeBBoxCenter(svg, provinceIds) {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     let any = false;
@@ -916,7 +936,6 @@ svg.bg-active .prov {
     text.setAttribute("y",y);
     text.setAttribute("text-anchor","middle");
     text.setAttribute("dominant-baseline","middle");
-    // インラインスタイルでエクスポート時にも見た目を保持する
     text.setAttribute("style", `font-size:${fontSize}px; font-weight:800; fill:#fff; stroke:#000; stroke-width:6px; paint-order:stroke fill; user-select:none;`);
     const lines = String(textValue).split("\n");
     lines.forEach((line,i)=>{
@@ -940,7 +959,6 @@ svg.bg-active .prov {
     layer.appendChild(text);
   }
 
-  // === データ読み込みとマップの更新 ===
   async function loadAndRender() {
     const svg = document.getElementById("mapSvg");
     if (!svg) return;
@@ -959,6 +977,7 @@ svg.bg-active .prov {
       const labelsLayer = ensureLayer(svg, "labels-layer");
       
       // レイヤーの重なり順を整える（番号はラベルの下にする）
+      // ※appendChildは既存の要素を一番手前（DOMの最後）に移動させます
       svg.appendChild(numbersLayer);
       svg.appendChild(labelsLayer);
       
@@ -967,7 +986,6 @@ svg.bg-active .prov {
       resetProvinces(svg);
 
       for (const item of data) {
-        // 編集サイトで作った数字ラベルを読み込む
         if (item.type === "provNumber") {
           addProvNumber(numbersLayer, item.text, item.x, item.y, item.fontSize);
           continue;
@@ -977,7 +995,6 @@ svg.bg-active .prov {
           continue;
         }
         
-        // 国データの読み込み
         if (!item.provinces || item.provinces.length === 0) continue;
 
         for (const id of item.provinces) {
@@ -1004,7 +1021,6 @@ svg.bg-active .prov {
   loadAndRender();
   setInterval(loadAndRender, REFRESH_INTERVAL_MS);
 
-  // === PNG保存処理（表示・非表示状態を反映） ===
   function downloadPNG() {
     const svg = document.getElementById("mapSvg");
     const originalViewBox = svg.getAttribute("viewBox");
@@ -1012,7 +1028,6 @@ svg.bg-active .prov {
     svg.setAttribute("width", "5000");
     svg.setAttribute("height", "2500");
 
-    // 現在の非表示状態をPNGに反映させるために、一時的なスタイルをSVG内に注入
     const exportStyle = document.createElementNS("http://www.w3.org/2000/svg", "style");
     let cssText = "";
     if (!labelsVisible) cssText += ".label { display: none !important; }\n";
@@ -1023,7 +1038,6 @@ svg.bg-active .prov {
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(svg);
 
-    // 注入したスタイルを削除して元に戻す
     svg.removeChild(exportStyle);
     if (originalViewBox) svg.setAttribute("viewBox", originalViewBox);
     else svg.removeAttribute("viewBox");
@@ -1069,14 +1083,12 @@ svg.bg-active .prov {
   }
 
   function handleStart(e) {
-    // 2本指でのタッチ（ピンチズームの開始）
     if (e.touches && e.touches.length === 2) {
       initialPinchDistance = getPinchDistance(e.touches);
       initialPinchViewBox = { ...viewBox };
       isDragging = false;
       return;
     }
-    // それ以上の指でのタッチは無視
     if (e.touches && e.touches.length > 2) return;
     
     isDragging = true;
@@ -1086,18 +1098,14 @@ svg.bg-active .prov {
   }
 
   function handleMove(e) {
-    e.preventDefault(); // スワイプで画面全体が動くのを防ぐ
-
-    // ピンチズーム（スマホ拡大縮小）処理
+    e.preventDefault(); 
     if (e.touches && e.touches.length === 2 && initialPinchDistance) {
       const currentDistance = getPinchDistance(e.touches);
-      // ピンチアウト(広げる)＝拡大＝scaleが小さくなる
       const scale = initialPinchDistance / currentDistance;
       
       const newW = initialPinchViewBox.w * scale;
       const newH = initialPinchViewBox.h * scale;
       
-      // 拡大縮小の限界値チェック
       if (newW >= 500 && newW <= 8000) {
         const cx = initialPinchViewBox.x + initialPinchViewBox.w / 2;
         const cy = initialPinchViewBox.y + initialPinchViewBox.h / 2;
@@ -1110,7 +1118,6 @@ svg.bg-active .prov {
       return;
     }
 
-    // 通常のドラッグ（移動）処理
     if (!isDragging) return;
     
     const pos = getPointerPos(e);
@@ -1137,18 +1144,15 @@ svg.bg-active .prov {
     }
   }
 
-  // PC: マウスイベント
   svg.addEventListener("mousedown", handleStart);
   window.addEventListener("mousemove", handleMove, { passive: false });
   window.addEventListener("mouseup", handleEnd);
 
-  // スマホ: タッチイベント
   svg.addEventListener("touchstart", handleStart, { passive: false });
   window.addEventListener("touchmove", handleMove, { passive: false });
   window.addEventListener("touchend", handleEnd);
   window.addEventListener("touchcancel", handleEnd);
 
-  // PC: マウスホイールでのズーム
   svg.addEventListener("wheel", function(e){
     e.preventDefault();
     const rect = svg.getBoundingClientRect();
@@ -1169,10 +1173,8 @@ svg.bg-active .prov {
     updateViewBox();
   }, { passive: false });
 
-  // 初期化実行
   updateViewBox();
 
 </script>
-
 </body>
 </html>
