@@ -176,6 +176,7 @@ svg.bg-active .prov {
   <button id="btnTopo" onclick="toggleBgMap('topo')">🗺️ 地形図</button>
   <button id="btnClimate" onclick="toggleBgMap('climate')">🌦️ 気候図</button>
   <button id="btnRegion" onclick="toggleBgMap('region')">🏷️ 地域名</button>
+  <button id="btnContinent" onclick="toggleBgMap('continent')">🌍 大陸名</button>
   
   <button onclick="zoomIn()">＋ 拡大</button>
   <button onclick="zoomOut()">－ 縮小</button>
@@ -196,6 +197,10 @@ svg.bg-active .prov {
   <div id="ctrl-region" class="bg-control" style="display:none;">
     <span>地域名 透明度:</span>
     <input type="range" id="op-region" min="0" max="1" step="0.05" value="1" oninput="updateBgOpacity('region', this.value)">
+  </div>
+  <div id="ctrl-continent" class="bg-control" style="display:none;">
+    <span>大陸名 透明度:</span>
+    <input type="range" id="op-continent" min="0" max="1" step="0.05" value="1" oninput="updateBgOpacity('continent', this.value)">
   </div>
 </div>
 
@@ -704,9 +709,10 @@ svg.bg-active .prov {
   const BG_MAPS = {
     topo: { url: "topography.png", id: "bg-img-topo" }, 
     climate: { url: "climate.png", id: "bg-img-climate" },
-    region: { url: "region.png", id: "bg-img-region" }
+    region: { url: "region.png", id: "bg-img-region" },
+    continent: { url: "continent.png", id: "bg-img-continent" } // ★追加
   };
-  let activeBgMaps = { topo: false, climate: false, region: false };
+  let activeBgMaps = { topo: false, climate: false, region: false, continent: false }; // ★追加
 
   // --- 背景地図関連の関数 ---
   function ensureBgLayer(svg) {
