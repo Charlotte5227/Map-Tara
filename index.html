@@ -720,8 +720,16 @@ svg.bg-active .prov {
     if (!layer) {
       layer = document.createElementNS("http://www.w3.org/2000/svg", "g");
       layer.setAttribute("id", "bg-layer");
-      // プロビンスの下（SVGの一番奥）に配置するため、最初の子要素として挿入する
-      svg.insertBefore(layer, svg.firstChild);
+      
+      // SVG内のプロビンス（.prov）をすべて取得
+      const provs = svg.querySelectorAll(".prov");
+      if (provs.length > 0) {
+        // 「一番最初のプロビンス」の直前に画像レイヤーを挿入する
+        // これにより、海の背景要素などよりも手前、かつ領土より奥に配置されます
+        provs[0].parentNode.insertBefore(layer, provs[0]);
+      } else {
+        svg.appendChild(layer);
+      }
     }
     return layer;
   }
