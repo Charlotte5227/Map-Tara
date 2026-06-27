@@ -1,20 +1,15 @@
 [
   {
     "type": "country",
-    "name": "ブラジル",
+    "name": "建国不可",
     "color": "#ff4444",
     "provinces": [
-      "path201",
-      "path207",
-      "path209",
-      "path206",
-      "path208",
-      "path202"
+      "path261"
     ],
-    "labelText": "ブラジル",
+    "labelText": "建国不可",
     "labelFontSize": 18,
-    "labelX": "2408.029495239258",
-    "labelY": "1073.0331726074219",
+    "labelX": "4202.5",
+    "labelY": "1818.9990234375",
     "lockCenter": false
   }
 ]
