@@ -1,0 +1,130 @@
+[
+  {
+    "type": "metadata",
+    "date": "西暦 1789年 01月 28日"
+  },
+  {
+    "type": "country",
+    "name": "美梅帝国",
+    "color": "#ff4444",
+    "provinces": [
+      "path261"
+    ],
+    "labelText": "美梅帝国",
+    "labelFontSize": 18,
+    "labelX": "4202.5",
+    "labelY": "1818.9990234375",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "リーデンガルト・ザイゲルグ立憲王国",
+    "color": "#01c7fc",
+    "provinces": [
+      "path240",
+      "path241"
+    ],
+    "labelText": "リーデンガルト・ザイゲルグ立憲王国",
+    "labelFontSize": 18,
+    "labelX": "3840.8641052246094",
+    "labelY": "1339.9426574707031",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "井口国",
+    "color": "#3a87fe",
+    "provinces": [
+      "path256"
+    ],
+    "labelText": "井口国",
+    "labelFontSize": 18,
+    "labelX": "4023.5001220703125",
+    "labelY": "1924.9998779296875",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "アルカディア共和国",
+    "color": "#5e30eb",
+    "provinces": [
+      "path226",
+      "path234",
+      "path233"
+    ],
+    "labelText": "アルカディア共和国",
+    "labelFontSize": 18,
+    "labelX": "2785.4959716796875",
+    "labelY": "1492.5328979492188",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ロピル王国",
+    "color": "#be38f3",
+    "provinces": [
+      "path224",
+      "path236"
+    ],
+    "labelText": "ロピル王国",
+    "labelFontSize": 18,
+    "labelX": "2534.984130859375",
+    "labelY": "1471.5147705078125",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ルプル帝国",
+    "color": "#be38f3",
+    "provinces": [
+      "path195",
+      "path196"
+    ],
+    "labelText": "ルプル帝国",
+    "labelFontSize": 18,
+    "labelX": "2069.5863647460938",
+    "labelY": "802.5486450195312",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "カリロンゴ国",
+    "color": "#e63b7a",
+    "provinces": [
+      "path278"
+    ],
+    "labelText": "カリロンゴ国",
+    "labelFontSize": 18,
+    "labelX": "1902",
+    "labelY": "2107.5",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ラー・ヘイゼル帝国",
+    "color": "#ff8648",
+    "provinces": [
+      "path165",
+      "path164",
+      "path163"
+    ],
+    "labelText": "ラー・ヘイゼル帝国",
+    "labelFontSize": 18,
+    "labelX": "593.3398208618164",
+    "labelY": "1241.4532470703125",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "アルバイネ帝国",
+    "color": "#feb43f",
+    "provinces": [
+      "path169"
+    ],
+    "labelText": "アルバイネ帝国",
+    "labelFontSize": 18,
+    "labelX": "506.4130859375",
+    "labelY": "910.357177734375",
+    "lockCenter": false
+  }
+]
