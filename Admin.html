@@ -3,147 +3,55 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Map Painter (ラベル編集・サイズ変更対応)</title>
+  <title>Map Painter (時間・履歴管理対応)</title>
   <style>
-    /* 画面全体を上下に分割するレイアウト */
-    body { 
-      margin: 0; 
-      font-family: sans-serif; 
-      display: flex; 
-      flex-direction: column; 
-      height: 100vh; /* 画面の高さいっぱい */
-      overflow: hidden; 
-      background: #f0f0f0; 
-    }
-
-    /* 上部：地図エリア */
-    #mapContainer { 
-      flex: 1; 
-      overflow: hidden; 
-      position: relative; 
-      background: #e8eef6; 
-      touch-action: none; /* スマホでのスワイプによる画面移動を禁止 */
-    }
-    svg { 
-      width: 100%; 
-      height: 100%; 
-      display: block; 
-      touch-action: none; 
-    }
-
+    /* === 既存のスタイル === */
+    body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #f0f0f0; }
+    #mapContainer { flex: 1; overflow: hidden; position: relative; background: #e8eef6; touch-action: none; }
+    svg { width: 100%; height: 100%; display: block; touch-action: none; }
     .prov { fill: #FEF9DB; stroke: #111; stroke-width: 1; cursor: pointer; }
     .prov:hover { opacity: 0.85; }
     .prov.selected { fill: #ff00003f !important; opacity: 0.9; }
-
-    /* ラベルのスタイル */
-    .label {
-      font-weight: 800;
-      fill: #fff;
-      stroke: #000;
-      stroke-width: 6px;
-      paint-order: stroke fill;
-      user-select: none;
-      pointer-events: auto;
-      cursor: move;
-      touch-action: none; /* スマホでのラベルドラッグを快適にする */
-      transition: fill 0.2s, stroke 0.2s; /* 色変更時のアニメーション */
-    }
+    .label { font-weight: 800; fill: #fff; stroke: #000; stroke-width: 6px; paint-order: stroke fill; user-select: none; pointer-events: auto; cursor: move; touch-action: none; transition: fill 0.2s, stroke 0.2s; }
     .labels-hidden .label { display: none; }
-
-    /* ★追加: 選択中のラベルを目立たせるスタイル */
-    .label.selected-label {
-      fill: #ffeb3b !important; /* 黄色 */
-      stroke: #d32f2f !important; /* 赤いフチ */
-      stroke-width: 8px;
-    }
-
-    /* 下部：UIパネル（新しい枠） */
-    #uiContainer {
-      height: 40vh; /* 画面の下部40%をUIに割り当て */
-      min-height: 250px;
-      background: #ffffff;
-      border-top: 2px solid #ccc;
-      box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
-      padding: 15px 20px;
-      overflow-y: auto; /* UIが多い場合はスクロール可能に */
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-    /* UIの要素をまとめるグループ */
-    .ui-group { 
-      display: flex; 
-      flex-wrap: wrap; 
-      gap: 12px; 
-      align-items: center; 
-      border-bottom: 1px solid #eee; 
-      padding-bottom: 15px; 
-    }
+    .label.selected-label { fill: #ffeb3b !important; stroke: #d32f2f !important; stroke-width: 8px; }
+    
+    #uiContainer { height: 40vh; min-height: 350px; background: #ffffff; border-top: 2px solid #ccc; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); padding: 15px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+    .ui-group { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; }
     .ui-group:last-child { border-bottom: none; }
-
-    /* ボタンスタイル（大きく、角丸、ホバーアクション） */
-    button {
-      padding: 12px 18px;
-      border-radius: 10px;
-      border: none;
-      background-color: #3b82f6; /* デフォルトの青色 */
-      color: white;
-      font-weight: bold;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-      touch-action: manipulation;
-    }
-    button:hover {
-      transform: scale(1.05); /* カーソルが合った時に少し大きく */
-      background-color: #2563eb;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.25);
-    }
-    button:active {
-      transform: scale(0.95);
-    }
-
-    /* 目的別にボタンの色を変更して視認性を高める */
-    #createCountryBtn, #applyToCountryBtn { background-color: #10b981; } /* 緑 */
+    
+    button { padding: 12px 18px; border-radius: 10px; border: none; background-color: #3b82f6; color: white; font-weight: bold; font-size: 14px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.15); touch-action: manipulation; }
+    button:hover { transform: scale(1.05); background-color: #2563eb; box-shadow: 0 4px 8px rgba(0,0,0,0.25); }
+    button:active { transform: scale(0.95); }
+    #createCountryBtn, #applyToCountryBtn { background-color: #10b981; }
     #createCountryBtn:hover, #applyToCountryBtn:hover { background-color: #059669; }
-    
-    #exportBtn, #importBtn, #publishBtn { background-color: #f59e0b; } /* オレンジ */
+    #exportBtn, #importBtn, #publishBtn { background-color: #f59e0b; }
     #exportBtn:hover, #importBtn:hover, #publishBtn:hover { background-color: #d97706; }
-
-    #addProvinceNumbersBtn { background-color: #8b5cf6; } /* 紫 */
+    #addProvinceNumbersBtn { background-color: #8b5cf6; }
     #addProvinceNumbersBtn:hover { background-color: #7c3aed; }
-
-    /* 入力フォームのスタイル */
-    input[type="text"], input[type="password"], select, textarea {
-      padding: 10px 12px; 
-      border-radius: 8px; 
-      border: 1px solid #ccc; 
-      font-size: 14px;
-      outline: none;
-    }
-    input[type="text"]:focus, textarea:focus { border-color: #3b82f6; }
     
+    input[type="text"], input[type="password"], input[type="date"], input[type="number"], select, textarea { padding: 10px 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 14px; outline: none; }
+    input[type="text"]:focus, textarea:focus { border-color: #3b82f6; }
     textarea { width: 100%; max-width: 300px; height: 60px; resize: none; }
-
-    /* ズームスライダー */
+    
     .slider-wrapper { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 250px; }
     input[type="range"] { flex: 1; height: 6px; background: #ddd; border-radius: 3px; outline: none; }
-    
-    /* 文字サイズ用 */
     .tiny { padding: 8px 12px; font-size: 12px; }
+
+    /* ★追加: 時間UI用のスタイル */
+    .time-panel { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .time-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   </style>
 </head>
 <body>
 
 <div id="mapContainer">
-   <svg
+<svg
    version="1.1"
    id="mapSvg"
-   width="5000"
-   height="2500"
-   viewBox="0 0 5000 2500"
+   width="4000"
+   height="2000"
+   viewBox="0 0 4000 2000"
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
@@ -625,10 +533,35 @@
        id="path287" />
   </g>
 </svg>
+
 </div>
 
 <div id="uiContainer">
   
+  <div class="time-panel">
+    <div style="font-weight:bold; color:#334155;">⏳ 世界の時間設定</div>
+    <div class="time-row">
+      <input id="calNameInput" type="text" placeholder="暦名 (例: 帝国暦)" style="width: 130px;" />
+      <input id="startDateInput" type="date" title="開始年月日" />
+      <div style="display:flex; align-items:center; gap: 4px; background:#fff; padding:4px 8px; border-radius:6px; border:1px solid #ccc;">
+        <span style="font-size:12px; font-weight:bold;">1日の長さ:</span>
+        <input id="dayLenHours" type="number" min="1" step="1" value="24" style="width: 60px;">時間
+        <input id="dayLenMins" type="number" min="0" max="50" step="10" value="0" style="width: 60px;">分
+      </div>
+      <button id="saveTimeBtn" style="background-color: #0ea5e9;">設定して時間を動かす</button>
+      <button id="loadTimeBtn" style="background-color: #64748b; font-size: 12px; padding: 8px 12px;">設定を取得</button>
+    </div>
+    <div class="time-row" style="border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+      <span style="font-weight:bold; font-size:16px; color:#b45309;" id="currentDateDisplay">現在の日付: 未設定</span>
+      
+      <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+        <span style="font-size: 12px; color: #666;">⏪ 過去の地図を復元:</span>
+        <input id="historyDateInput" type="date" />
+        <button id="loadHistoryBtn" style="background-color: #475569; padding: 8px 12px; font-size: 12px;">読み込む</button>
+      </div>
+    </div>
+  </div>
+
   <div class="ui-group">
     <div class="slider-wrapper">
       <label style="font-weight:bold;">🔍 ズーム:</label>
@@ -685,8 +618,6 @@
       <span id="provLabelSizeVal" style="font-size:13px; width:20px;">14</span>
       <button id="applyProvSizeBtn" class="tiny">一括適用</button>
     </div>
-
-    <span style="font-size:12px; color:#555; width: 100%; margin-top: 5px;">※生成された番号ラベルはクリックして個別にテキストやサイズを変更できます。ドラッグで位置調整も可能です。</span>
   </div>
 
   <div class="ui-group">
@@ -696,44 +627,80 @@
 
     <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
       <input id="ghToken" type="password" placeholder="GitHub token" style="width: 150px;">
-      <button id="publishBtn">GitHubへ公開</button>
-      <span id="publishStatus" style="font-size:13px;"></span>
+      <button id="publishBtn">GitHubへ公開 (履歴も保存)</button>
+      <span id="publishStatus" style="font-size:13px; font-weight:bold;"></span>
     </div>
   </div>
 
 </div>
 
 <script>
-  // === 設定 ===
+  // === 基本設定・状態 ===
   const SELECT_CLASS = "selected";
   const DEFAULT_LABEL_SIZE = 18;
-
-  // === 状態 ===
   const selectedIds = new Set();
   const countries = new Map();
   const usedColors = new Set();
   let activeCountryId = "";
-  
   const freeLabels = [];
   let activeFreeLabelId = null;
 
+  // === 時間管理 (Time System) ===
+  let timeConfig = null; 
+  const TIME_FILE_PATH = "time-config.json"; // GitHubに保存する時間設定ファイル名
+
+  // 1日の長さをミリ秒に変換
+  function calcDayLengthMs() {
+    const h = parseInt(document.getElementById("dayLenHours").value) || 0;
+    const m = parseInt(document.getElementById("dayLenMins").value) || 0;
+    let ms = (h * 60 * 60 * 1000) + (m * 60 * 1000);
+    return Math.max(ms, 3600000); // 最低1時間は保証
+  }
+
+  // 現実時間と設定から、現在インゲームでの日付を算出
+  function getCurrentGameDate() {
+    if (!timeConfig) return null;
+    const now = Date.now();
+    const elapsedMs = now - timeConfig.baseRealTime;
+    const elapsedDays = Math.floor(elapsedMs / timeConfig.dayLengthMs);
+    
+    const d = new Date(timeConfig.baseGameDate);
+    d.setDate(d.getDate() + Math.max(0, elapsedDays)); // 過去に戻らないように保護
+
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+
+    return {
+      dateObj: d,
+      formatStr: `${y}-${m}-${day}`, // YYYY-MM-DD
+      displayStr: `${timeConfig.calendarName} ${y}年 ${m}月 ${day}日`
+    };
+  }
+
+  // 日付表示の自動更新
+  function updateDateDisplay() {
+    const display = document.getElementById("currentDateDisplay");
+    const current = getCurrentGameDate();
+    if (current) {
+      display.textContent = `現在の日付: ${current.displayStr}`;
+    }
+  }
+  setInterval(updateDateDisplay, 10000); // 10秒ごとに再計算して表示更新
+
+  // --- 地図操作系関数 ---
   function randColor() {
     const maxAttempts = 500;
     for (let i = 0; i < maxAttempts; i++) {
       const h = Math.floor(Math.random() * 360);
       const color = `hsl(${h} 70% 55%)`;
-      if (!usedColors.has(color)) {
-        usedColors.add(color);
-        return color;
-      }
+      if (!usedColors.has(color)) { usedColors.add(color); return color; }
     }
     return `hsl(${Math.floor(Math.random()*360)} 60% 50%)`;
   }
 
   function getProvinceBaseColor(id) {
-    for (const c of countries.values()) {
-      if (c.ids.has(id)) return c.color;
-    }
+    for (const c of countries.values()) { if (c.ids.has(id)) return c.color; }
     return "#FEF9DB";
   }
 
@@ -744,11 +711,8 @@
     p.style.fill = getProvinceBaseColor(id);
   }
 
-  function getSvgRoot() {
-    return document.getElementById("mapSvg");
-  }
+  function getSvgRoot() { return document.getElementById("mapSvg"); }
 
-  // === UIの更新 ===
   function updateStatus() {
     const status = document.getElementById("status");
     const c = activeCountryId ? countries.get(activeCountryId) : null;
@@ -768,40 +732,24 @@
 
     if (c) {
       ta.value = c.labelText || c.name || '';
-      lockCb.checked = !!c.lockCenter;
-      lockCb.disabled = false;
-      btnResetPos.disabled = false;
-      sizeInput.value = c.labelFontSize || DEFAULT_LABEL_SIZE;
-      sizeVal.textContent = sizeInput.value;
+      lockCb.checked = !!c.lockCenter; lockCb.disabled = false; btnResetPos.disabled = false;
+      sizeInput.value = c.labelFontSize || DEFAULT_LABEL_SIZE; sizeVal.textContent = sizeInput.value;
     } else if (fl) {
       ta.value = fl.text || '';
-      lockCb.checked = false;
-      lockCb.disabled = true;
-      btnResetPos.disabled = true; 
-      sizeInput.value = fl.fontSize || DEFAULT_LABEL_SIZE;
-      sizeVal.textContent = sizeInput.value;
+      lockCb.checked = false; lockCb.disabled = true; btnResetPos.disabled = true; 
+      sizeInput.value = fl.fontSize || DEFAULT_LABEL_SIZE; sizeVal.textContent = sizeInput.value;
     } else {
-      ta.value = '';
-      lockCb.checked = false;
-      lockCb.disabled = true;
-      btnResetPos.disabled = true;
+      ta.value = ''; lockCb.checked = false; lockCb.disabled = true; btnResetPos.disabled = true;
     }
-
-    // ★追加: 選択中のラベルをハイライトする処理を呼び出し
     updateHighlight();
   }
 
-  // ★追加: 選択中のラベルを目立たせる（他のラベルの選択を解除する）
   function updateHighlight() {
     const svg = getSvgRoot();
     svg.querySelectorAll('.label').forEach(el => el.classList.remove('selected-label'));
-    
     let targetLabelId = null;
-    if (activeCountryId && countries.has(activeCountryId)) {
-      targetLabelId = countries.get(activeCountryId).labelId;
-    } else if (activeFreeLabelId) {
-      targetLabelId = activeFreeLabelId;
-    }
+    if (activeCountryId && countries.has(activeCountryId)) targetLabelId = countries.get(activeCountryId).labelId;
+    else if (activeFreeLabelId) targetLabelId = activeFreeLabelId;
     
     if (targetLabelId) {
       const el = svg.getElementById(targetLabelId);
@@ -809,15 +757,10 @@
     }
   }
 
-  // --- ラベルレイヤ ---
   function ensureLabelsLayer() {
     const svg = getSvgRoot();
     let g = svg.querySelector("#labels-layer");
-    if (!g) {
-      g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.setAttribute("id", "labels-layer");
-      svg.appendChild(g);
-    }
+    if (!g) { g = document.createElementNS("http://www.w3.org/2000/svg", "g"); g.setAttribute("id", "labels-layer"); svg.appendChild(g); }
     return g;
   }
 
@@ -829,10 +772,8 @@
       const el = svg.getElementById(id);
       if (!el) continue;
       const bb = el.getBBox();
-      minX = Math.min(minX, bb.x);
-      minY = Math.min(minY, bb.y);
-      maxX = Math.max(maxX, bb.x + bb.width);
-      maxY = Math.max(maxY, bb.y + bb.height);
+      minX = Math.min(minX, bb.x); minY = Math.min(minY, bb.y);
+      maxX = Math.max(maxX, bb.x + bb.width); maxY = Math.max(maxY, bb.y + bb.height);
       any = true;
     }
     if (!any) return { cx: 0, cy: 0 };
@@ -855,38 +796,27 @@
     const layer = ensureLabelsLayer();
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     const id = `label-${Date.now()}-${Math.floor(Math.random()*1e6)}`;
-    text.setAttribute("id", id);
-    text.setAttribute("class", "label");
-    text.setAttribute("x", String(x));
-    text.setAttribute("y", String(y));
-    text.setAttribute("text-anchor", "middle");
-    text.setAttribute("dominant-baseline", "middle");
+    text.setAttribute("id", id); text.setAttribute("class", "label");
+    text.setAttribute("x", String(x)); text.setAttribute("y", String(y));
+    text.setAttribute("text-anchor", "middle"); text.setAttribute("dominant-baseline", "middle");
     text.setAttribute("pointer-events", "auto");
-    text.style.fontSize = `${size}px`;
-    text.setAttribute('data-font-size', String(size));
+    text.style.fontSize = `${size}px`; text.setAttribute('data-font-size', String(size));
 
-    setLabelTextElem(text, name);
-    makeLabelDraggable(text);
-    layer.appendChild(text);
+    setLabelTextElem(text, name); makeLabelDraggable(text); layer.appendChild(text);
     return id;
   }
 
   function moveLabelToCountryCenter(country) {
-    const svg = getSvgRoot();
-    const label = svg.getElementById(country.labelId);
+    const svg = getSvgRoot(); const label = svg.getElementById(country.labelId);
     if (!label) return;
     const { cx, cy } = computeGroupCenter(country.ids);
-    label.setAttribute('x', String(cx));
-    label.setAttribute('y', String(cy));
+    label.setAttribute('x', String(cx)); label.setAttribute('y', String(cy));
     Array.from(label.querySelectorAll('tspan')).forEach(t => t.setAttribute('x', String(cx)));
   }
 
   function repaintCountry(country) {
     const svg = getSvgRoot();
-    for (const id of country.ids) {
-      const p = svg.getElementById(id);
-      if (p) p.style.fill = country.color;
-    }
+    for (const id of country.ids) { const p = svg.getElementById(id); if (p) p.style.fill = country.color; }
   }
 
   function refreshCountrySelect() {
@@ -895,76 +825,39 @@
     sel.innerHTML = `<option value="">（国を選択）</option>`;
     for (const [cid, c] of countries.entries()) {
       const opt = document.createElement("option");
-      opt.value = cid;
-      opt.textContent = c.name;
-      sel.appendChild(opt);
+      opt.value = cid; opt.textContent = c.name; sel.appendChild(opt);
     }
     if (current && countries.has(current)) sel.value = current;
     else if (activeCountryId && countries.has(activeCountryId)) sel.value = activeCountryId;
   }
 
   document.addEventListener("click", (e) => {
-    if (isMapMoved) {
-      isMapMoved = false; 
-      return;
-    }
+    if (isMapMoved) { isMapMoved = false; return; }
     const el = e.target;
-
     if (el && el.classList && el.classList.contains("prov")) {
-      const id = el.id;
-      if (!id) return;
-      if (selectedIds.has(id)) {
-        selectedIds.delete(id);
-        el.classList.remove(SELECT_CLASS);
-        restoreProvinceColor(id);
-      } else {
-        selectedIds.add(id);
-        el.classList.add(SELECT_CLASS);
-      }
-      updateStatus();
-      return;
+      const id = el.id; if (!id) return;
+      if (selectedIds.has(id)) { selectedIds.delete(id); el.classList.remove(SELECT_CLASS); restoreProvinceColor(id); }
+      else { selectedIds.add(id); el.classList.add(SELECT_CLASS); }
+      updateStatus(); return;
     }
-
     const labelNode = el.closest ? el.closest('.label') : null;
     if (labelNode) {
       const labelId = labelNode.id;
       for (const [cid, c] of countries.entries()) {
-        if (c.labelId === labelId) {
-          activeCountryId = cid;
-          activeFreeLabelId = null;
-          refreshCountrySelect();
-          document.getElementById('countrySelect').value = cid;
-          updateStatus();
-          return;
-        }
+        if (c.labelId === labelId) { activeCountryId = cid; activeFreeLabelId = null; refreshCountrySelect(); document.getElementById('countrySelect').value = cid; updateStatus(); return; }
       }
       const fl = freeLabels.find(f => f.labelId === labelId);
-      if (fl) {
-        activeCountryId = "";
-        activeFreeLabelId = labelId;
-        refreshCountrySelect();
-        document.getElementById('countrySelect').value = ""; 
-        updateStatus();
-        return;
-      }
+      if (fl) { activeCountryId = ""; activeFreeLabelId = labelId; refreshCountrySelect(); document.getElementById('countrySelect').value = ""; updateStatus(); return; }
     }
   });
 
-  document.getElementById("countrySelect").addEventListener("change", (e) => {
-    activeCountryId = e.target.value;
-    if (activeCountryId) activeFreeLabelId = null;
-    updateStatus();
-  });
-
-  document.getElementById("toggleLabels").addEventListener("change", (e) => {
-    document.body.classList.toggle("labels-hidden", !e.target.checked);
-  });
+  document.getElementById("countrySelect").addEventListener("change", (e) => { activeCountryId = e.target.value; if (activeCountryId) activeFreeLabelId = null; updateStatus(); });
+  document.getElementById("toggleLabels").addEventListener("change", (e) => { document.body.classList.toggle("labels-hidden", !e.target.checked); });
 
   document.getElementById("createCountryBtn").addEventListener("click", () => {
     if (selectedIds.size === 0) { alert("まずプロビを選択してください。"); return; }
     const name = document.getElementById("nameInput").value.trim();
     if (!name) { alert("国名を入力してください。"); return; }
-    
     const cid = `c-${Date.now()}-${Math.floor(Math.random()*1e6)}`;
     const color = document.getElementById("colorInput").value;
     const ids = new Set(selectedIds);
@@ -974,18 +867,9 @@
     const country = { name, color, ids, labelId, labelText: name, labelFontSize: DEFAULT_LABEL_SIZE, lockCenter: false };
     countries.set(cid, country);
 
-    for (const id of selectedIds) {
-      const p = getSvgRoot().getElementById(id);
-      if (p) { p.classList.remove("selected"); p.style.fill = country.color; }
-    }
-
-    document.getElementById("nameInput").value = "";
-    activeCountryId = cid;
-    activeFreeLabelId = null;
-    refreshCountrySelect();
-    document.getElementById("countrySelect").value = cid;
-    selectedIds.clear();
-    updateStatus();
+    for (const id of selectedIds) { const p = getSvgRoot().getElementById(id); if (p) { p.classList.remove("selected"); p.style.fill = country.color; } }
+    document.getElementById("nameInput").value = ""; activeCountryId = cid; activeFreeLabelId = null; refreshCountrySelect();
+    document.getElementById("countrySelect").value = cid; selectedIds.clear(); updateStatus();
   });
 
   document.getElementById("applyToCountryBtn").addEventListener("click", () => {
@@ -994,38 +878,30 @@
     const country = countries.get(activeCountryId);
     for (const id of selectedIds) {
       const p = getSvgRoot().getElementById(id);
-      if (country.ids.has(id)) {
-        country.ids.delete(id);
-        if (p) p.style.fill = "#FEF9DB";
-      } else {
-        country.ids.add(id);
-        if (p) p.style.fill = country.color;
-      }
+      if (country.ids.has(id)) { country.ids.delete(id); if (p) p.style.fill = "#FEF9DB"; } 
+      else { country.ids.add(id); if (p) p.style.fill = country.color; }
       if (p) p.classList.remove("selected");
     }
     if (country.ids.size === 0) {
-      const labelEl = getSvgRoot().getElementById(country.labelId);
-      if (labelEl) labelEl.remove();
-      countries.delete(activeCountryId);
-      usedColors.delete(country.color);
-      activeCountryId = "";
-      refreshCountrySelect();
-    } else {
-      if (!country.lockCenter) moveLabelToCountryCenter(country);
-    }
-    selectedIds.clear();
-    updateStatus();
+      const labelEl = getSvgRoot().getElementById(country.labelId); if (labelEl) labelEl.remove();
+      countries.delete(activeCountryId); usedColors.delete(country.color); activeCountryId = ""; refreshCountrySelect();
+    } else { if (!country.lockCenter) moveLabelToCountryCenter(country); }
+    selectedIds.clear(); updateStatus();
   });
 
-  refreshCountrySelect();
-  updateStatus();
-
+  // === データ書き出し/読み込み ===
   function buildExportArrayFromCountries() {
     const out = [];
+    
+    // ★追加: 閲覧サイトに日付を渡すための metadata を一番上に埋め込む
+    const current = getCurrentGameDate();
+    if (current) {
+      out.push({ type: "metadata", date: current.displayStr });
+    }
+
     for (const [, c] of countries.entries()) {
       const labelEl = getSvgRoot().getElementById(c.labelId);
-      const lx = labelEl ? labelEl.getAttribute('x') : null;
-      const ly = labelEl ? labelEl.getAttribute('y') : null;
+      const lx = labelEl ? labelEl.getAttribute('x') : null; const ly = labelEl ? labelEl.getAttribute('y') : null;
       out.push({
         type: "country", name: c.name, color: c.color, provinces: Array.from(c.ids),
         labelText: c.labelText, labelFontSize: c.labelFontSize || DEFAULT_LABEL_SIZE,
@@ -1033,17 +909,8 @@
       });
     }
     for (const l of freeLabels) {
-      const el = getSvgRoot().getElementById(l.labelId);
-      if (!el) continue;
-      // ★修正: provNumber などのタイプをそのまま保存する
-      out.push({
-        type: l.type || "freeLabel", 
-        provId: l.provId,  // プロビ番号用の追加データ
-        text: l.text, 
-        fontSize: l.fontSize || DEFAULT_LABEL_SIZE,
-        x: el.getAttribute("x"), 
-        y: el.getAttribute("y")
-      });
+      const el = getSvgRoot().getElementById(l.labelId); if (!el) continue;
+      out.push({ type: l.type || "freeLabel", provId: l.provId, text: l.text, fontSize: l.fontSize || DEFAULT_LABEL_SIZE, x: el.getAttribute("x"), y: el.getAttribute("y") });
     }
     return out;
   }
@@ -1053,9 +920,7 @@
     const json = JSON.stringify(exportData, null, 2);
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); 
-    a.href = url; a.download = "map-data.json"; a.click(); 
-    URL.revokeObjectURL(url);
+    const a = document.createElement("a"); a.href = url; a.download = "map-data.json"; a.click(); URL.revokeObjectURL(url);
   });
 
   function resetAllToWhite() {
@@ -1071,23 +936,16 @@
     resetAllToWhite();
 
     jsonArray.forEach(item => {
-      // ★修正: freeLabel と provNumber の両方に対応
+      if (item.type === "metadata") return; // メタデータはマップ描画では無視
       if (item.type === "freeLabel" || item.type === "provNumber") {
         const fontSize = item.fontSize || (item.type === "provNumber" ? 14 : DEFAULT_LABEL_SIZE);
         const labelId = addLabel(item.text, item.x, item.y, fontSize);
-        freeLabels.push({ 
-          type: item.type,
-          provId: item.provId,
-          text: item.text, 
-          labelId: labelId, 
-          fontSize: fontSize 
-        });
+        freeLabels.push({ type: item.type, provId: item.provId, text: item.text, labelId: labelId, fontSize: fontSize });
         return;
       }
       if (!item || !item.name || !item.color || !Array.isArray(item.provinces)) return;
       const cid = `c-${Date.now()}-${Math.floor(Math.random()*1e6)}`;
-      const ids = new Set(item.provinces);
-      usedColors.add(item.color);
+      const ids = new Set(item.provinces); usedColors.add(item.color);
       const { cx, cy } = computeGroupCenter(ids);
       const labelX = (typeof item.labelX !== 'undefined' && item.labelX !== null) ? Number(item.labelX) : cx;
       const labelY = (typeof item.labelY !== 'undefined' && item.labelY !== null) ? Number(item.labelY) : cy;
@@ -1095,92 +953,184 @@
 
       const labelId = addLabel(item.labelText || item.name, labelX, labelY, fontSize);
       const country = { name: item.name, color: item.color, ids, labelId, labelText: item.labelText || item.name, labelFontSize: fontSize, lockCenter: !!item.lockCenter };
-      
-      countries.set(cid, country);
-      repaintCountry(country);
+      countries.set(cid, country); repaintCountry(country);
     });
-    refreshCountrySelect(); 
-    updateStatus();
+    refreshCountrySelect(); updateStatus();
   }
 
   async function readJsonFile(file) { const text = await file.text(); const data = JSON.parse(text); if (!Array.isArray(data)) throw new Error("JSONの形式が想定と違います"); return data; }
-
   document.getElementById("importBtn").addEventListener("click", async () => {
     const input = document.getElementById("importFile");
     if (!input.files || input.files.length === 0) { alert("map-data.json を選択してください。"); return; }
     try { const data = await readJsonFile(input.files[0]); importData(data); alert("読み込み完了！"); } catch (e) { alert("失敗： " + e.message); }
   });
 
-  // --- GitHub ---
+  // --- GitHub API 通信系 ---
   const GH_OWNER = "Charlotte5227"; const GH_REPO  = "Map-Tara"; const GH_PATH  = "map-data.json";
   function toBase64Utf8(str) { return btoa(unescape(encodeURIComponent(str))); }
   async function getFileSha(owner, repo, path, token) {
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, "X-GitHub-Api-Version": "2022-11-28", Accept: "application/vnd.github+json" } });
-    if (res.status === 404) return null; if (!res.ok) throw new Error("SHA取得失敗");
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, "X-GitHub-Api-Version": "2022-11-28", Accept: "application/vnd.github+json" }, cache: "no-store" });
+    if (res.status === 404) return null; if (!res.ok) throw new Error("取得失敗:" + path);
     return (await res.json()).sha;
   }
   async function putFile(owner, repo, path, token, contentText, shaOrNull) {
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
     const body = { message: `Update ${path}`, content: toBase64Utf8(contentText), ...(shaOrNull ? { sha: shaOrNull } : {}) };
     const res = await fetch(url, { method: "PUT", headers: { Authorization: `Bearer ${token}`, "X-GitHub-Api-Version": "2022-11-28", Accept: "application/vnd.github+json", "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    if (!res.ok) throw new Error("PUT失敗");
+    if (!res.ok) throw new Error("保存失敗:" + path);
   }
 
+  // ★変更: GitHubへ公開ボタン（履歴も自動保存）
   document.getElementById("publishBtn").addEventListener("click", async () => {
     const token = document.getElementById("ghToken").value.trim();
     const status = document.getElementById("publishStatus");
     if (!token) { alert("GitHub token を入力してください。"); return; }
-    status.textContent = "公開中…";
+    
+    status.textContent = "最新データを公開中…";
+    status.style.color = "#d97706";
+    
     try {
       const data = buildExportArrayFromCountries();
+      const jsonStr = JSON.stringify(data, null, 2);
+      
+      // 1. 通常の map-data.json を上書き
       const sha = await getFileSha(GH_OWNER, GH_REPO, GH_PATH, token);
-      await putFile(GH_OWNER, GH_REPO, GH_PATH, token, JSON.stringify(data, null, 2), sha);
-      status.textContent = "公開OK";
-    } catch (e) { status.textContent = "失敗"; alert(e.message); }
+      await putFile(GH_OWNER, GH_REPO, GH_PATH, token, jsonStr, sha);
+      
+      // 2. 履歴ファイル (history/map-data-YYYY-MM-DD.json) として保存
+      const current = getCurrentGameDate();
+      if (current) {
+        status.textContent = "履歴データを保存中…";
+        const histPath = `history/map-data-${current.formatStr}.json`;
+        const histSha = await getFileSha(GH_OWNER, GH_REPO, histPath, token);
+        await putFile(GH_OWNER, GH_REPO, histPath, token, jsonStr, histSha);
+      }
+      
+      status.textContent = "公開＆履歴保存 完了！";
+      status.style.color = "#10b981";
+      setTimeout(() => status.textContent = "", 3000);
+    } catch (e) { 
+      status.textContent = "エラー発生"; status.style.color = "red"; alert(e.message); 
+    }
   });
 
+  // ★追加: タイムトラベル（過去データの読み込み）
+  document.getElementById("loadHistoryBtn").addEventListener("click", async () => {
+    const token = document.getElementById("ghToken").value.trim();
+    const targetDate = document.getElementById("historyDateInput").value;
+    if (!token) { alert("GitHub token を入力してください。"); return; }
+    if (!targetDate) { alert("読み込みたい日付を指定してください。"); return; }
+
+    const btn = document.getElementById("loadHistoryBtn");
+    btn.textContent = "検索中...";
+    
+    try {
+      const histPath = `history/map-data-${targetDate}.json`;
+      const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${histPath}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3.raw" }, cache: "no-store" });
+      
+      if (res.status === 404) {
+        alert(`${targetDate} の地図データは保存されていません。`);
+        btn.textContent = "読み込む";
+        return;
+      }
+      if (!res.ok) throw new Error("APIアクセスエラー");
+
+      const data = await res.json();
+      importData(data);
+      alert(`${targetDate} の地図を復元しました！`);
+    } catch(e) {
+      alert("読み込み失敗: " + e.message);
+    }
+    btn.textContent = "読み込む";
+  });
+
+  // ★追加: 時間設定をGitHubに保存（基準点のセット）
+  document.getElementById("saveTimeBtn").addEventListener("click", async () => {
+    const token = document.getElementById("ghToken").value.trim();
+    const calName = document.getElementById("calNameInput").value.trim();
+    const startDate = document.getElementById("startDateInput").value;
+    const dayLenMs = calcDayLengthMs();
+
+    if (!token) { alert("GitHub token を入力してください。"); return; }
+    if (!calName || !startDate) { alert("暦名と開始日を入力してください。"); return; }
+
+    const configData = {
+      calendarName: calName,
+      baseGameDate: startDate,
+      baseRealTime: Date.now(), // 今この瞬間を基準点とする
+      dayLengthMs: dayLenMs
+    };
+
+    document.getElementById("saveTimeBtn").textContent = "保存中...";
+    try {
+      const sha = await getFileSha(GH_OWNER, GH_REPO, TIME_FILE_PATH, token);
+      await putFile(GH_OWNER, GH_REPO, TIME_FILE_PATH, token, JSON.stringify(configData, null, 2), sha);
+      timeConfig = configData;
+      updateDateDisplay();
+      alert("世界時計の基準点をセットしました！時間が進行し始めます。");
+    } catch (e) {
+      alert("時間設定の保存に失敗しました: " + e.message);
+    }
+    document.getElementById("saveTimeBtn").textContent = "設定して時間を動かす";
+  });
+
+  // ★追加: GitHubから時間設定を取得
+  document.getElementById("loadTimeBtn").addEventListener("click", async () => {
+    const token = document.getElementById("ghToken").value.trim();
+    if (!token) { alert("GitHub token を入力してください。"); return; }
+    
+    try {
+      const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${TIME_FILE_PATH}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3.raw" }, cache: "no-store" });
+      if (res.status === 404) { alert("時間設定がまだ保存されていません。"); return; }
+      if (!res.ok) throw new Error();
+
+      timeConfig = await res.json();
+      
+      document.getElementById("calNameInput").value = timeConfig.calendarName;
+      document.getElementById("startDateInput").value = timeConfig.baseGameDate;
+      // 逆算してフォームにセット
+      const hours = Math.floor(timeConfig.dayLengthMs / 3600000);
+      const mins = Math.floor((timeConfig.dayLengthMs % 3600000) / 60000);
+      document.getElementById("dayLenHours").value = hours;
+      document.getElementById("dayLenMins").value = mins;
+
+      updateDateDisplay();
+      alert("時間設定を取得しました。");
+    } catch (e) {
+      alert("設定の取得に失敗しました。");
+    }
+  });
+
+
+  // --- 細かいUI動作 ---
   document.getElementById('applyLabelTextBtn').addEventListener('click', () => {
     const text = document.getElementById('labelText').value;
     if (activeCountryId && countries.has(activeCountryId)) {
-      const c = countries.get(activeCountryId);
-      c.labelText = text;
-      const labelEl = getSvgRoot().getElementById(c.labelId);
-      if (labelEl) setLabelTextElem(labelEl, text);
-      return;
+      const c = countries.get(activeCountryId); c.labelText = text;
+      const labelEl = getSvgRoot().getElementById(c.labelId); if (labelEl) setLabelTextElem(labelEl, text); return;
     }
     if (activeFreeLabelId) {
       const fl = freeLabels.find(f => f.labelId === activeFreeLabelId);
-      if (fl) {
-        fl.text = text;
-        const labelEl = getSvgRoot().getElementById(fl.labelId);
-        if (labelEl) setLabelTextElem(labelEl, text);
-      }
+      if (fl) { fl.text = text; const labelEl = getSvgRoot().getElementById(fl.labelId); if (labelEl) setLabelTextElem(labelEl, text); }
       return;
     }
     alert('編集対象のラベルをクリックして選択してください');
   });
 
-  document.getElementById('labelSize').addEventListener('input', (e) => {
-    document.getElementById('labelSizeVal').textContent = e.target.value;
-  });
-
+  document.getElementById('labelSize').addEventListener('input', (e) => { document.getElementById('labelSizeVal').textContent = e.target.value; });
   document.getElementById('applySizeBtn').addEventListener('click', () => {
     const size = document.getElementById('labelSize').value;
     if (activeCountryId && countries.has(activeCountryId)) {
-      const c = countries.get(activeCountryId);
-      c.labelFontSize = size;
+      const c = countries.get(activeCountryId); c.labelFontSize = size;
       const labelEl = getSvgRoot().getElementById(c.labelId);
-      if (labelEl) { labelEl.style.fontSize = `${size}px`; labelEl.setAttribute('data-font-size', size); }
-      return;
+      if (labelEl) { labelEl.style.fontSize = `${size}px`; labelEl.setAttribute('data-font-size', size); } return;
     }
     if (activeFreeLabelId) {
       const fl = freeLabels.find(f => f.labelId === activeFreeLabelId);
-      if (fl) {
-        fl.fontSize = size;
-        const labelEl = getSvgRoot().getElementById(fl.labelId);
-        if (labelEl) { labelEl.style.fontSize = `${size}px`; labelEl.setAttribute('data-font-size', size); }
-      }
+      if (fl) { fl.fontSize = size; const labelEl = getSvgRoot().getElementById(fl.labelId); if (labelEl) { labelEl.style.fontSize = `${size}px`; labelEl.setAttribute('data-font-size', size); } }
       return;
     }
     alert('編集対象のラベルをクリックして選択してください');
@@ -1188,248 +1138,121 @@
 
   document.getElementById('resetLabelPosBtn').addEventListener('click', () => {
     if (!activeCountryId || !countries.has(activeCountryId)) return;
-    const c = countries.get(activeCountryId);
-    const { cx, cy } = computeGroupCenter(c.ids);
+    const c = countries.get(activeCountryId); const { cx, cy } = computeGroupCenter(c.ids);
     const labelEl = getSvgRoot().getElementById(c.labelId);
-    if (labelEl) {
-      labelEl.setAttribute('x', String(cx)); labelEl.setAttribute('y', String(cy));
-      Array.from(labelEl.querySelectorAll('tspan')).forEach(t => t.setAttribute('x', String(cx)));
-    }
+    if (labelEl) { labelEl.setAttribute('x', String(cx)); labelEl.setAttribute('y', String(cy)); Array.from(labelEl.querySelectorAll('tspan')).forEach(t => t.setAttribute('x', String(cx))); }
   });
 
   document.getElementById('lockLabelCenter').addEventListener('change', (e) => {
     if (!activeCountryId || !countries.has(activeCountryId)) return;
-    const c = countries.get(activeCountryId);
-    c.lockCenter = e.target.checked;
-    if (c.lockCenter) moveLabelToCountryCenter(c);
+    const c = countries.get(activeCountryId); c.lockCenter = e.target.checked; if (c.lockCenter) moveLabelToCountryCenter(c);
   });
 
   function makeLabelDraggable(labelEl) {
-    let dragging = false;
-    let startX = 0, startY = 0, origX = 0, origY = 0;
-
+    let dragging = false; let startX = 0, startY = 0, origX = 0, origY = 0;
     labelEl.addEventListener('pointerdown', (ev) => {
-      ev.preventDefault();
-      labelEl.setPointerCapture(ev.pointerId);
-      dragging = true;
-      startX = ev.clientX; startY = ev.clientY;
-      origX = Number(labelEl.getAttribute('x') || 0);
-      origY = Number(labelEl.getAttribute('y') || 0);
+      ev.preventDefault(); labelEl.setPointerCapture(ev.pointerId); dragging = true; startX = ev.clientX; startY = ev.clientY;
+      origX = Number(labelEl.getAttribute('x') || 0); origY = Number(labelEl.getAttribute('y') || 0);
     });
-
     labelEl.addEventListener('pointermove', (ev) => {
       if (!dragging) return;
-      const ctm = getSvgRoot().getScreenCTM();
-      if (!ctm) return;
-      const scale = ctm.a; // ズーム時の移動量補正
-      
-      const dx = (ev.clientX - startX) / scale;
-      const dy = (ev.clientY - startY) / scale;
+      const ctm = getSvgRoot().getScreenCTM(); if (!ctm) return; const scale = ctm.a; 
+      const dx = (ev.clientX - startX) / scale; const dy = (ev.clientY - startY) / scale;
       const newX = origX + dx; const newY = origY + dy;
-      labelEl.setAttribute('x', String(newX));
-      labelEl.setAttribute('y', String(newY));
+      labelEl.setAttribute('x', String(newX)); labelEl.setAttribute('y', String(newY));
       Array.from(labelEl.querySelectorAll('tspan')).forEach(t => t.setAttribute('x', String(newX)));
     });
-
     labelEl.addEventListener('pointerup', (ev) => {
-      if (!dragging) return;
-      dragging = false;
-      try { labelEl.releasePointerCapture(ev.pointerId); } catch (e) {}
+      if (!dragging) return; dragging = false; try { labelEl.releasePointerCapture(ev.pointerId); } catch (e) {}
       for (const [cid, c] of countries.entries()) {
-        if (c.labelId === labelEl.id) {
-          c.lockCenter = false; c.labelText = c.labelText || c.name;
-          updateStatus(); break;
-        }
+        if (c.labelId === labelEl.id) { c.lockCenter = false; c.labelText = c.labelText || c.name; updateStatus(); break; }
       }
     });
     labelEl.addEventListener('pointercancel', () => { dragging = false; });
   }
 
   document.getElementById("addFreeLabelBtn").addEventListener("click", () => {
-    const text = prompt("ラベルの文字を入力してください");
-    if (!text) return;
-    const svg = getSvgRoot();
-    const viewBox = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
+    const text = prompt("ラベルの文字を入力してください"); if (!text) return;
+    const svg = getSvgRoot(); const viewBox = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
     const x = viewBox && viewBox.width ? viewBox.x + viewBox.width/2 : 500;
     const y = viewBox && viewBox.height ? viewBox.y + viewBox.height/2 : 300;
     const labelId = addLabel(text, x, y, DEFAULT_LABEL_SIZE);
     freeLabels.push({ type: "freeLabel", text: text, labelId: labelId, fontSize: DEFAULT_LABEL_SIZE });
-    activeFreeLabelId = labelId; activeCountryId = "";
-    document.getElementById("countrySelect").value = "";
-    updateStatus();
+    activeFreeLabelId = labelId; activeCountryId = ""; document.getElementById("countrySelect").value = ""; updateStatus();
   });
 
-  // ==========================================
-  // 【追加要件5, 6】 プロビへ連番を割り振る
-  // ==========================================
   document.getElementById("addProvinceNumbersBtn").addEventListener("click", () => {
-    if(!confirm("すべてのプロヴィンスに連番ラベルを自動生成しますか？\n(生成された数字はクリックで編集、ドラッグで位置調整可能です)")) return;
-    
-    const svg = getSvgRoot();
-    const provs = svg.querySelectorAll(".prov");
-    let count = 1;
-
-    // UIから現在の「数字ラベル一括サイズ」を取得して割り振る
+    if(!confirm("すべてのプロヴィンスに連番ラベルを自動生成しますか？")) return;
+    const svg = getSvgRoot(); const provs = svg.querySelectorAll(".prov"); let count = 1;
     const fontSize = parseInt(document.getElementById("provLabelSize").value, 10); 
-
     provs.forEach(p => {
-      // 各プロヴィンスの中心を取得
-      const bb = p.getBBox();
-      const cx = bb.x + bb.width / 2;
-      const cy = bb.y + bb.height / 2;
-      
+      const bb = p.getBBox(); const cx = bb.x + bb.width / 2; const cy = bb.y + bb.height / 2;
       const labelId = addLabel(String(count), cx, cy, fontSize);
-      
-      // ★修正: provNumberとして専用のタイプを付与する
-      freeLabels.push({
-        type: "provNumber",
-        provId: p.id,
-        text: String(count),
-        labelId: labelId,
-        fontSize: fontSize
-      });
+      freeLabels.push({ type: "provNumber", provId: p.id, text: String(count), labelId: labelId, fontSize: fontSize });
       count++;
     });
-    
-    alert(`${count - 1} 個の連番ラベルを生成しました。`);
-    updateStatus();
+    alert(`${count - 1} 個の連番ラベルを生成しました。`); updateStatus();
   });
 
-  // ★追加: 数字ラベル(provNumber)を一括でサイズ変更する処理
-  document.getElementById('provLabelSize').addEventListener('input', (e) => {
-    document.getElementById('provLabelSizeVal').textContent = e.target.value;
-  });
-
+  document.getElementById('provLabelSize').addEventListener('input', (e) => { document.getElementById('provLabelSizeVal').textContent = e.target.value; });
   document.getElementById('applyProvSizeBtn').addEventListener('click', () => {
-    const newSize = document.getElementById('provLabelSize').value;
-    let count = 0;
+    const newSize = document.getElementById('provLabelSize').value; let count = 0;
     freeLabels.forEach(fl => {
       if (fl.type === "provNumber") {
-        fl.fontSize = newSize;
-        const labelEl = getSvgRoot().getElementById(fl.labelId);
-        if (labelEl) {
-          labelEl.style.fontSize = `${newSize}px`;
-          labelEl.setAttribute('data-font-size', newSize);
-        }
+        fl.fontSize = newSize; const labelEl = getSvgRoot().getElementById(fl.labelId);
+        if (labelEl) { labelEl.style.fontSize = `${newSize}px`; labelEl.setAttribute('data-font-size', newSize); }
         count++;
       }
     });
-    
-    if (activeFreeLabelId) updateStatus(); // UIの表示を更新
-    if (count > 0) {
-      alert(`${count} 個の数字ラベルのサイズを変更しました。`);
-    } else {
-      alert("変更する数字ラベルが見つかりません。先に「プロビ番号を割り振る」を実行してください。");
-    }
+    if (activeFreeLabelId) updateStatus(); 
+    if (count > 0) { alert(`${count} 個の数字ラベルのサイズを変更しました。`); } else { alert("変更する数字ラベルが見つかりません。"); }
   });
 
+  // === マップのズームとパン ===
+  const MAP_WIDTH = 5000; const MAP_HEIGHT = 2500; const svgEl = getSvgRoot();
+  if (!svgEl.getAttribute("viewBox")) { svgEl.setAttribute("viewBox", `0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`); }
 
-  // ==========================================
-  // マップのズームとパン
-  // ==========================================
-  const MAP_WIDTH = 5000;
-  const MAP_HEIGHT = 2500;
-  const svgEl = getSvgRoot();
+  let isMapPanning = false; let isMapMoved = false; 
+  let startPanX = 0; let startPanY = 0; let startViewBoxX = 0; let startViewBoxY = 0;
+  const zoomSlider = document.getElementById("zoomSlider"); const zoomVal = document.getElementById("zoomVal");
 
-  if (!svgEl.getAttribute("viewBox")) {
-    svgEl.setAttribute("viewBox", `0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`);
-  }
-
-  let isMapPanning = false;
-  let isMapMoved = false; 
-  let startPanX = 0; let startPanY = 0;
-  let startViewBoxX = 0; let startViewBoxY = 0;
-
-  // UIスライダー要素
-  const zoomSlider = document.getElementById("zoomSlider");
-  const zoomVal = document.getElementById("zoomVal");
-
-  // スライダーと連動してViewBoxを更新
   function updateZoomFromSlider() {
-    const scale = parseFloat(zoomSlider.value); // 0.5 ~ 10
-    zoomVal.textContent = scale.toFixed(1) + "x";
-
-    const vb = svgEl.viewBox.baseVal;
-    // 現在の画面の中心を維持する
-    const cx = vb.x + vb.width / 2;
-    const cy = vb.y + vb.height / 2;
-
-    let newW = MAP_WIDTH / scale;
-    let newH = MAP_HEIGHT / scale;
-    let newX = cx - newW / 2;
-    let newY = cy - newH / 2;
-
-    if (newX < 0) newX = 0;
-    if (newY < 0) newY = 0;
+    const scale = parseFloat(zoomSlider.value); zoomVal.textContent = scale.toFixed(1) + "x";
+    const vb = svgEl.viewBox.baseVal; const cx = vb.x + vb.width / 2; const cy = vb.y + vb.height / 2;
+    let newW = MAP_WIDTH / scale; let newH = MAP_HEIGHT / scale;
+    let newX = cx - newW / 2; let newY = cy - newH / 2;
+    if (newX < 0) newX = 0; if (newY < 0) newY = 0;
     if (newX + newW > MAP_WIDTH) newX = Math.max(0, MAP_WIDTH - newW);
     if (newY + newH > MAP_HEIGHT) newY = Math.max(0, MAP_HEIGHT - newH);
-
     svgEl.setAttribute("viewBox", `${newX} ${newY} ${newW} ${newH}`);
   }
 
-  // スライダー操作イベント
   zoomSlider.addEventListener("input", updateZoomFromSlider);
-
-  // ホイールによる拡大縮小
   svgEl.addEventListener("wheel", (e) => {
     e.preventDefault(); 
-    
-    // 現在のスライダー値を取得
-    let currentScale = parseFloat(zoomSlider.value);
-    const zoomStep = 0.1;
-    
-    if (e.deltaY > 0) { // 引く（縮小）
-      currentScale -= zoomStep * 2;
-    } else { // 寄る（拡大）
-      currentScale += zoomStep * 2;
-    }
-
-    // スライダーの範囲内に収める
+    let currentScale = parseFloat(zoomSlider.value); const zoomStep = 0.1;
+    if (e.deltaY > 0) currentScale -= zoomStep * 2; else currentScale += zoomStep * 2;
     if (currentScale < parseFloat(zoomSlider.min)) currentScale = parseFloat(zoomSlider.min);
     if (currentScale > parseFloat(zoomSlider.max)) currentScale = parseFloat(zoomSlider.max);
-    
-    zoomSlider.value = currentScale;
-    updateZoomFromSlider(); // スライダー更新処理を呼び出す
+    zoomSlider.value = currentScale; updateZoomFromSlider(); 
   }, { passive: false });
 
-  // ドラッグ（パン）操作
   svgEl.addEventListener("pointerdown", (e) => {
     if (e.target.closest('.label')) return; 
-
-    isMapPanning = true;
-    isMapMoved = false; 
-    startPanX = e.clientX;
-    startPanY = e.clientY;
-    
-    const vb = svgEl.viewBox.baseVal;
-    startViewBoxX = vb.x;
-    startViewBoxY = vb.y;
+    isMapPanning = true; isMapMoved = false; startPanX = e.clientX; startPanY = e.clientY;
+    const vb = svgEl.viewBox.baseVal; startViewBoxX = vb.x; startViewBoxY = vb.y;
   });
 
   svgEl.addEventListener("pointermove", (e) => {
     if (!isMapPanning) return;
-
-    const dx = e.clientX - startPanX;
-    const dy = e.clientY - startPanY;
-
-    // スマホ操作を考慮して、移動判定の閾値を少し大きく（10px）
-    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-      isMapMoved = true;
-    }
-
-    const ctm = svgEl.getScreenCTM();
-    if (!ctm) return;
-    const scale = ctm.a; 
-
+    const dx = e.clientX - startPanX; const dy = e.clientY - startPanY;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) isMapMoved = true;
+    const ctm = svgEl.getScreenCTM(); if (!ctm) return; const scale = ctm.a; 
     const vb = svgEl.viewBox.baseVal;
-    let newX = startViewBoxX - (dx / scale);
-    let newY = startViewBoxY - (dy / scale);
-
-    if (newX < 0) newX = 0;
-    if (newY < 0) newY = 0;
+    let newX = startViewBoxX - (dx / scale); let newY = startViewBoxY - (dy / scale);
+    if (newX < 0) newX = 0; if (newY < 0) newY = 0;
     if (newX + vb.width > MAP_WIDTH) newX = MAP_WIDTH - vb.width;
     if (newY + vb.height > MAP_HEIGHT) newY = MAP_HEIGHT - vb.height;
-
     svgEl.setAttribute("viewBox", `${newX} ${newY} ${vb.width} ${vb.height}`);
   });
 
