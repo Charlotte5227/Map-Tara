@@ -1134,29 +1134,20 @@ async function downloadPNG() {
     const svg = document.getElementById("mapSvg");
     if (!svg) return;
 
-    // 1. クローン作成とCSS適用
+    // 1. SVGのシリアライズ（まずはHTMLに書き出して中身を確認する）
     const cloneSvg = svg.cloneNode(true);
     cloneSvg.setAttribute("viewBox", "0 0 5000 2500");
     cloneSvg.setAttribute("width", "5000");
     cloneSvg.setAttribute("height", "2500");
-    
-    const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
-    let cssText = ".prov { stroke: #111; stroke-width: 1; }\n";
-    if (!labelsVisible) cssText += ".label { display: none !important; }\n";
-    if (!numbersVisible) cssText += ".prov-number { display: none !important; }\n";
-    if (svg.classList.contains("bg-bottom-active")) {
-      cssText += ".prov { fill-opacity: 0.6 !important; }\n";
-    }
-    style.textContent = cssText;
-    cloneSvg.insertBefore(style, cloneSvg.firstChild);
 
-    // 2. 画像のBase64変換処理
+    // 2. Base64化処理
     const images = cloneSvg.querySelectorAll("image");
     for (let img of images) {
-      const url = img.getAttribute("href");
+      const url = img.getAttribute("href") || img.getAttribute("xlink:href");
       if (url && !url.startsWith("data:")) {
         try {
           const response = await fetch(url);
+          if (!response.ok) throw new Error("画像取得失敗: " + url);
           const blob = await response.blob();
           const base64 = await new Promise((resolve) => {
             const reader = new FileReader();
@@ -1165,35 +1156,40 @@ async function downloadPNG() {
           });
           img.setAttribute("href", base64);
         } catch (e) {
-          console.warn("この画像は読み込めませんでした:", url);
+          console.error("画像Base64化エラー:", e);
         }
       }
     }
 
-    // 3. SVGをBlob化
     const svgString = new XMLSerializer().serializeToString(cloneSvg);
-    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
+    
+    // 【重要】コンソールでSVGの中身を確認できるようにする
+    console.log("生成されたSVGソース:", svgString);
 
-    // 4. Canvas描画
     const canvas = document.createElement("canvas");
     canvas.width = 5000;
     canvas.height = 2500;
     const ctx = canvas.getContext("2d");
 
     const img = new Image();
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+
     img.onload = () => {
-      ctx.drawImage(img, 0, 0);
-      const a = document.createElement("a");
-      a.download = "map.png";
-      a.href = canvas.toDataURL("image/png");
-      a.click();
-      URL.revokeObjectURL(url);
+      try {
+        ctx.drawImage(img, 0, 0);
+        const a = document.createElement("a");
+        a.download = "map.png";
+        a.href = canvas.toDataURL("image/png");
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error("Canvas書き出しエラー:", err);
+      }
     };
     img.onerror = (e) => {
-      console.error("Canvas描画エラー:", e);
-      alert("PNG生成中にエラーが発生しました。");
-      URL.revokeObjectURL(url);
+      console.error("★最終的な画像ロードエラー:", e);
+      alert("画像ロードエラーです。F12コンソールの「生成されたSVGソース」を確認してください。");
     };
     img.src = url;
   }
