@@ -847,14 +847,27 @@ svg.bg-bottom-active .prov {
     }
   }
 
+// 閲覧サイト用の日付計算ロジック（日・月・年対応版）
   function getCalculatedDate() {
     if (!timeConfig) return null;
     const now = Date.now();
     const elapsedMs = now - timeConfig.baseRealTime;
-    const elapsedDays = Math.floor(elapsedMs / timeConfig.dayLengthMs);
     
+    // 管理サイトの設定を読み込む (古いデータの互換性対応も含む)
+    const stepMs = timeConfig.stepLengthMs || timeConfig.dayLengthMs || 3600000;
+    const unit = timeConfig.stepUnit || "day";
+    
+    const elapsedSteps = Math.floor(elapsedMs / stepMs);
     const d = new Date(timeConfig.baseGameDate);
-    d.setDate(d.getDate() + Math.max(0, elapsedDays));
+
+    // 選択された単位(日/月/年)に応じて時間を進める
+    if (unit === "year") {
+      d.setFullYear(d.getFullYear() + Math.max(0, elapsedSteps));
+    } else if (unit === "month") {
+      d.setMonth(d.getMonth() + Math.max(0, elapsedSteps));
+    } else {
+      d.setDate(d.getDate() + Math.max(0, elapsedSteps));
+    }
 
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -862,7 +875,6 @@ svg.bg-bottom-active .prov {
 
     return `${timeConfig.calendarName} ${y}年 ${m}月 ${day}日`;
   }
-
   // 自動的に日付表示を更新し続けるループ
   function startClock() {
     const svg = document.getElementById("mapSvg");
