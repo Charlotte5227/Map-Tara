@@ -1323,6 +1323,44 @@
   svgEl.addEventListener("pointerup", () => { isMapPanning = false; });
   svgEl.addEventListener("pointercancel", () => { isMapPanning = false; });
 
+  // === 【追加】 ページ読み込み時に自動で最新の map-data.json を取得する処理 ===
+  async function loadInitialMapData() {
+    const token = document.getElementById("ghToken").value.trim();
+    if (!token) {
+        console.log("GitHub Tokenが未入力のため、自動読み込みをスキップします");
+        return;
+    }
+    
+    try {
+        // GitHub APIを使って最新データを取得
+        const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+        const res = await fetch(url, { 
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3.raw" }, 
+            cache: "no-store" 
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            importData(data); // 既存の読み込み関数を再利用
+            console.log("最新の地図データを読み込みました");
+        }
+    } catch (e) {
+        console.error("初期データの読み込みに失敗しました:", e);
+    }
+  }
+
+  // ページ読み込み時に実行
+  window.addEventListener('DOMContentLoaded', () => {
+    // 1. ローカルの自動保存から復元を試みる（もしあれば）
+    const savedStr = localStorage.getItem("mapPainterAutoSave");
+    if (savedStr) {
+        // どちらを優先するかは状況によりますが、自動保存を優先する場合
+        // importData(JSON.parse(savedStr));
+    }
+    // 2. もしくはGitHubから最新を読み込む
+    loadInitialMapData();
+  });
+
 </script>
 </body>
 </html>
