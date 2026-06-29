@@ -1,5 +1,9 @@
 [
   {
+    "type": "metadata",
+    "date": "西暦 1789年 01月 28日"
+  },
+  {
     "type": "country",
     "name": "美梅帝国",
     "color": "#ff4444",
@@ -136,6 +140,20 @@
     "labelFontSize": "30",
     "labelX": "593.3398208618164",
     "labelY": "1241.453254699707",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "アルカディア解放戦線",
+    "color": "#84ff42",
+    "provinces": [
+      "path226",
+      "path233"
+    ],
+    "labelText": "アルカディア解放戦線",
+    "labelFontSize": 18,
+    "labelX": "2785.4959716796875",
+    "labelY": "1492.5328979492188",
     "lockCenter": false
   },
   {
