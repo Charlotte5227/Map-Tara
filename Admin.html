@@ -38,7 +38,7 @@
     input[type="range"] { flex: 1; height: 6px; background: #ddd; border-radius: 3px; outline: none; }
     .tiny { padding: 8px 12px; font-size: 12px; }
 
-    /* ★追加: 時間UI用のスタイル */
+    /* 時間UI用のスタイル */
     .time-panel { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; width: 100%; }
     .time-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   </style>
@@ -46,7 +46,7 @@
 <body>
 
 <div id="mapContainer">
-<svg
+  <svg
    version="1.1"
    id="mapSvg"
    width="4000"
@@ -544,9 +544,15 @@
       <input id="calNameInput" type="text" placeholder="暦名 (例: 帝国暦)" style="width: 130px;" />
       <input id="startDateInput" type="date" title="開始年月日" />
       <div style="display:flex; align-items:center; gap: 4px; background:#fff; padding:4px 8px; border-radius:6px; border:1px solid #ccc;">
-        <span style="font-size:12px; font-weight:bold;">1日の長さ:</span>
-        <input id="dayLenHours" type="number" min="1" step="1" value="24" style="width: 60px;">時間
-        <input id="dayLenMins" type="number" min="0" max="50" step="10" value="0" style="width: 60px;">分
+        <span style="font-size:12px; font-weight:bold;">1</span>
+        <select id="stepUnit" style="padding: 2px; font-size: 12px; border: none; outline: none; background: transparent; font-weight: bold; cursor: pointer; color: #b45309;">
+          <option value="day">日</option>
+          <option value="month">月</option>
+          <option value="year">年</option>
+        </select>
+        <span style="font-size:12px; font-weight:bold;">の長さ:</span>
+        <input id="stepLenHours" type="number" min="0" step="1" value="24" style="width: 50px;">時間
+        <input id="stepLenMins" type="number" min="0" max="50" step="10" value="0" style="width: 50px;">分
       </div>
       <button id="saveTimeBtn" style="background-color: #0ea5e9;">設定して時間を動かす</button>
       <button id="loadTimeBtn" style="background-color: #64748b; font-size: 12px; padding: 8px 12px;">設定を取得</button>
@@ -647,25 +653,37 @@
 
   // === 時間管理 (Time System) ===
   let timeConfig = null; 
-  const TIME_FILE_PATH = "time-config.json"; // GitHubに保存する時間設定ファイル名
+  const TIME_FILE_PATH = "time-config.json"; 
 
-  // 1日の長さをミリ秒に変換
-  function calcDayLengthMs() {
-    const h = parseInt(document.getElementById("dayLenHours").value) || 0;
-    const m = parseInt(document.getElementById("dayLenMins").value) || 0;
+  // ★変更: 1ステップ(日/月/年)の長さをミリ秒に変換
+  function calcStepLengthMs() {
+    const h = parseInt(document.getElementById("stepLenHours").value) || 0;
+    const m = parseInt(document.getElementById("stepLenMins").value) || 0;
     let ms = (h * 60 * 60 * 1000) + (m * 60 * 1000);
-    return Math.max(ms, 3600000); // 最低1時間は保証
+    return Math.max(ms, 60000); // エラー防止のため最低1分は保証
   }
 
-  // 現実時間と設定から、現在インゲームでの日付を算出
+  // ★変更: 現実時間と設定から、現在インゲームでの日付を算出
   function getCurrentGameDate() {
     if (!timeConfig) return null;
     const now = Date.now();
     const elapsedMs = now - timeConfig.baseRealTime;
-    const elapsedDays = Math.floor(elapsedMs / timeConfig.dayLengthMs);
     
+    // 過去互換性対応 (古い設定ファイルが読み込まれた場合)
+    const stepMs = timeConfig.stepLengthMs || timeConfig.dayLengthMs;
+    const unit = timeConfig.stepUnit || "day";
+    
+    const elapsedSteps = Math.floor(elapsedMs / stepMs);
     const d = new Date(timeConfig.baseGameDate);
-    d.setDate(d.getDate() + Math.max(0, elapsedDays)); // 過去に戻らないように保護
+
+    // 選択された単位に応じて時間を進める
+    if (unit === "year") {
+      d.setFullYear(d.getFullYear() + Math.max(0, elapsedSteps));
+    } else if (unit === "month") {
+      d.setMonth(d.getMonth() + Math.max(0, elapsedSteps));
+    } else {
+      d.setDate(d.getDate() + Math.max(0, elapsedSteps));
+    }
 
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -673,12 +691,11 @@
 
     return {
       dateObj: d,
-      formatStr: `${y}-${m}-${day}`, // YYYY-MM-DD
+      formatStr: `${y}-${m}-${day}`, 
       displayStr: `${timeConfig.calendarName} ${y}年 ${m}月 ${day}日`
     };
   }
 
-  // 日付表示の自動更新
   function updateDateDisplay() {
     const display = document.getElementById("currentDateDisplay");
     const current = getCurrentGameDate();
@@ -686,7 +703,7 @@
       display.textContent = `現在の日付: ${current.displayStr}`;
     }
   }
-  setInterval(updateDateDisplay, 10000); // 10秒ごとに再計算して表示更新
+  setInterval(updateDateDisplay, 10000);
 
   // --- 地図操作系関数 ---
   function randColor() {
@@ -889,11 +906,9 @@
     selectedIds.clear(); updateStatus();
   });
 
-  // === データ書き出し/読み込み ===
   function buildExportArrayFromCountries() {
     const out = [];
     
-    // ★追加: 閲覧サイトに日付を渡すための metadata を一番上に埋め込む
     const current = getCurrentGameDate();
     if (current) {
       out.push({ type: "metadata", date: current.displayStr });
@@ -936,7 +951,7 @@
     resetAllToWhite();
 
     jsonArray.forEach(item => {
-      if (item.type === "metadata") return; // メタデータはマップ描画では無視
+      if (item.type === "metadata") return; 
       if (item.type === "freeLabel" || item.type === "provNumber") {
         const fontSize = item.fontSize || (item.type === "provNumber" ? 14 : DEFAULT_LABEL_SIZE);
         const labelId = addLabel(item.text, item.x, item.y, fontSize);
@@ -965,7 +980,6 @@
     try { const data = await readJsonFile(input.files[0]); importData(data); alert("読み込み完了！"); } catch (e) { alert("失敗： " + e.message); }
   });
 
-  // --- GitHub API 通信系 ---
   const GH_OWNER = "Charlotte5227"; const GH_REPO  = "Map-Tara"; const GH_PATH  = "map-data.json";
   function toBase64Utf8(str) { return btoa(unescape(encodeURIComponent(str))); }
   async function getFileSha(owner, repo, path, token) {
@@ -981,7 +995,6 @@
     if (!res.ok) throw new Error("保存失敗:" + path);
   }
 
-  // ★変更: GitHubへ公開ボタン（履歴も自動保存）
   document.getElementById("publishBtn").addEventListener("click", async () => {
     const token = document.getElementById("ghToken").value.trim();
     const status = document.getElementById("publishStatus");
@@ -994,11 +1007,9 @@
       const data = buildExportArrayFromCountries();
       const jsonStr = JSON.stringify(data, null, 2);
       
-      // 1. 通常の map-data.json を上書き
       const sha = await getFileSha(GH_OWNER, GH_REPO, GH_PATH, token);
       await putFile(GH_OWNER, GH_REPO, GH_PATH, token, jsonStr, sha);
       
-      // 2. 履歴ファイル (history/map-data-YYYY-MM-DD.json) として保存
       const current = getCurrentGameDate();
       if (current) {
         status.textContent = "履歴データを保存中…";
@@ -1015,7 +1026,6 @@
     }
   });
 
-  // ★追加: タイムトラベル（過去データの読み込み）
   document.getElementById("loadHistoryBtn").addEventListener("click", async () => {
     const token = document.getElementById("ghToken").value.trim();
     const targetDate = document.getElementById("historyDateInput").value;
@@ -1046,12 +1056,13 @@
     btn.textContent = "読み込む";
   });
 
-  // ★追加: 時間設定をGitHubに保存（基準点のセット）
+  // ★変更: 時間設定をGitHubに保存（単位も保存する）
   document.getElementById("saveTimeBtn").addEventListener("click", async () => {
     const token = document.getElementById("ghToken").value.trim();
     const calName = document.getElementById("calNameInput").value.trim();
     const startDate = document.getElementById("startDateInput").value;
-    const dayLenMs = calcDayLengthMs();
+    const stepUnit = document.getElementById("stepUnit").value;
+    const stepLenMs = calcStepLengthMs();
 
     if (!token) { alert("GitHub token を入力してください。"); return; }
     if (!calName || !startDate) { alert("暦名と開始日を入力してください。"); return; }
@@ -1059,8 +1070,9 @@
     const configData = {
       calendarName: calName,
       baseGameDate: startDate,
-      baseRealTime: Date.now(), // 今この瞬間を基準点とする
-      dayLengthMs: dayLenMs
+      baseRealTime: Date.now(), 
+      stepLengthMs: stepLenMs,
+      stepUnit: stepUnit
     };
 
     document.getElementById("saveTimeBtn").textContent = "保存中...";
@@ -1076,7 +1088,7 @@
     document.getElementById("saveTimeBtn").textContent = "設定して時間を動かす";
   });
 
-  // ★追加: GitHubから時間設定を取得
+  // ★変更: GitHubから時間設定を取得（単位も復元する）
   document.getElementById("loadTimeBtn").addEventListener("click", async () => {
     const token = document.getElementById("ghToken").value.trim();
     if (!token) { alert("GitHub token を入力してください。"); return; }
@@ -1091,11 +1103,18 @@
       
       document.getElementById("calNameInput").value = timeConfig.calendarName;
       document.getElementById("startDateInput").value = timeConfig.baseGameDate;
-      // 逆算してフォームにセット
-      const hours = Math.floor(timeConfig.dayLengthMs / 3600000);
-      const mins = Math.floor((timeConfig.dayLengthMs % 3600000) / 60000);
-      document.getElementById("dayLenHours").value = hours;
-      document.getElementById("dayLenMins").value = mins;
+      
+      const stepMs = timeConfig.stepLengthMs || timeConfig.dayLengthMs || 3600000;
+      const hours = Math.floor(stepMs / 3600000);
+      const mins = Math.floor((stepMs % 3600000) / 60000);
+      document.getElementById("stepLenHours").value = hours;
+      document.getElementById("stepLenMins").value = mins;
+      
+      if (timeConfig.stepUnit) {
+        document.getElementById("stepUnit").value = timeConfig.stepUnit;
+      } else {
+        document.getElementById("stepUnit").value = "day"; // 過去のデータの互換性
+      }
 
       updateDateDisplay();
       alert("時間設定を取得しました。");
