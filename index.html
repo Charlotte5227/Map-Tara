@@ -190,7 +190,7 @@ svg.bg-bottom-active .prov {
   #zoomSlider { width: 120px; } 
 }
 </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://unpkg.com/html-to-image@1.11.13/dist/html-to-image.js"></script>
 </head>
 <body class="numbers-hidden"> 
 
@@ -1133,25 +1133,38 @@ svg.bg-bottom-active .prov {
   }
 
 async function downloadPNG() {
-    const target = document.getElementById("mapContainer");
+
+    const node = document.getElementById("mapContainer");
 
     try {
-        const canvas = await html2canvas(target, {
-            backgroundColor: null, // 背景透過。白背景なら "#fff"
-            useCORS: true,
-            allowTaint: false,
-            scale: window.devicePixelRatio * 2 // 高解像度化
+
+        const dataUrl = await htmlToImage.toPng(node, {
+
+            cacheBust: true,
+
+            pixelRatio: 4,
+
+            backgroundColor: "#ffffff"
+
         });
 
         const link = document.createElement("a");
+
         link.download = "map.png";
-        link.href = canvas.toDataURL("image/png");
+
+        link.href = dataUrl;
+
         link.click();
 
-    } catch (e) {
-        console.error(e);
-        alert("PNG保存に失敗しました。");
     }
+    catch (err) {
+
+        console.error(err);
+
+        alert("画像保存に失敗しました。");
+
+    }
+
 }
   // === スマホ・PC共通のドラッグ ＆ ピンチズーム処理 ===
   const svg = document.getElementById("mapSvg");
