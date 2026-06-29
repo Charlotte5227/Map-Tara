@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Map Painter (時間・履歴管理対応)</title>
+  <title>Map Painter (時間・履歴管理・自動保存対応)</title>
   <style>
     /* === 既存のスタイル === */
     body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #f0f0f0; }
@@ -631,6 +631,11 @@
     <input type="file" id="importFile" accept="application/json" style="max-width: 200px;" />
     <button id="importBtn">読み込む</button>
 
+    <div style="margin-left: 10px; display:flex; gap:8px; align-items:center; border-left: 1px solid #ccc; padding-left: 10px;">
+      <button id="restoreAutoSaveBtn" style="background-color: #64748b; font-size: 12px; padding: 8px 12px;" title="前回の未保存データを復元します">🔄 自動保存から復元</button>
+      <span id="autoSaveStatus" style="font-size:12px; font-weight:bold; color:#10b981; width: 140px;"></span>
+    </div>
+
     <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
       <input id="ghToken" type="password" placeholder="GitHub token" style="width: 150px;">
       <button id="publishBtn">GitHubへ公開 (履歴も保存)</button>
@@ -655,28 +660,24 @@
   let timeConfig = null; 
   const TIME_FILE_PATH = "time-config.json"; 
 
-  // ★変更: 1ステップ(日/月/年)の長さをミリ秒に変換
   function calcStepLengthMs() {
     const h = parseInt(document.getElementById("stepLenHours").value) || 0;
     const m = parseInt(document.getElementById("stepLenMins").value) || 0;
     let ms = (h * 60 * 60 * 1000) + (m * 60 * 1000);
-    return Math.max(ms, 60000); // エラー防止のため最低1分は保証
+    return Math.max(ms, 60000); 
   }
 
-  // ★変更: 現実時間と設定から、現在インゲームでの日付を算出
   function getCurrentGameDate() {
     if (!timeConfig) return null;
     const now = Date.now();
     const elapsedMs = now - timeConfig.baseRealTime;
     
-    // 過去互換性対応 (古い設定ファイルが読み込まれた場合)
     const stepMs = timeConfig.stepLengthMs || timeConfig.dayLengthMs;
     const unit = timeConfig.stepUnit || "day";
     
     const elapsedSteps = Math.floor(elapsedMs / stepMs);
     const d = new Date(timeConfig.baseGameDate);
 
-    // 選択された単位に応じて時間を進める
     if (unit === "year") {
       d.setFullYear(d.getFullYear() + Math.max(0, elapsedSteps));
     } else if (unit === "month") {
@@ -980,6 +981,52 @@
     try { const data = await readJsonFile(input.files[0]); importData(data); alert("読み込み完了！"); } catch (e) { alert("失敗： " + e.message); }
   });
 
+  // ==========================================
+  // ★追加: オートセーブ（自動保存）機能
+  // ==========================================
+  function performAutoSave() {
+    try {
+      const data = buildExportArrayFromCountries();
+      // 変更がなくても状態を保存し続ける（ローカルストレージへ格納）
+      localStorage.setItem("mapPainterAutoSave", JSON.stringify(data));
+      
+      const status = document.getElementById("autoSaveStatus");
+      const timeStr = new Date().toLocaleTimeString();
+      status.textContent = `✓ 自動保存済 (${timeStr})`;
+      
+      // 3秒後に文字を消す（チカチカさせないため）
+      setTimeout(() => { 
+        if (status.textContent.startsWith("✓")) status.textContent = ""; 
+      }, 3000);
+    } catch(e) {
+      console.error("オートセーブに失敗しました:", e);
+    }
+  }
+
+  // 10秒ごとに自動保存を実行
+  setInterval(performAutoSave, 10000);
+
+  // 自動保存から復元ボタンの処理
+  document.getElementById("restoreAutoSaveBtn").addEventListener("click", () => {
+    const savedStr = localStorage.getItem("mapPainterAutoSave");
+    if (!savedStr) {
+      alert("自動保存されたデータがありません。（まだ何も編集していません）");
+      return;
+    }
+    
+    if (confirm("最後に自動保存された状態を復元しますか？\n（現在の未保存の編集は失われます）")) {
+      try {
+        const data = JSON.parse(savedStr);
+        importData(data);
+        alert("自動保存から復元しました！");
+      } catch(e) {
+        alert("復元に失敗しました: " + e.message);
+      }
+    }
+  });
+
+
+  // --- GitHub API 通信系 ---
   const GH_OWNER = "Charlotte5227"; const GH_REPO  = "Map-Tara"; const GH_PATH  = "map-data.json";
   function toBase64Utf8(str) { return btoa(unescape(encodeURIComponent(str))); }
   async function getFileSha(owner, repo, path, token) {
@@ -1056,7 +1103,6 @@
     btn.textContent = "読み込む";
   });
 
-  // ★変更: 時間設定をGitHubに保存（単位も保存する）
   document.getElementById("saveTimeBtn").addEventListener("click", async () => {
     const token = document.getElementById("ghToken").value.trim();
     const calName = document.getElementById("calNameInput").value.trim();
@@ -1088,7 +1134,6 @@
     document.getElementById("saveTimeBtn").textContent = "設定して時間を動かす";
   });
 
-  // ★変更: GitHubから時間設定を取得（単位も復元する）
   document.getElementById("loadTimeBtn").addEventListener("click", async () => {
     const token = document.getElementById("ghToken").value.trim();
     if (!token) { alert("GitHub token を入力してください。"); return; }
@@ -1113,7 +1158,7 @@
       if (timeConfig.stepUnit) {
         document.getElementById("stepUnit").value = timeConfig.stepUnit;
       } else {
-        document.getElementById("stepUnit").value = "day"; // 過去のデータの互換性
+        document.getElementById("stepUnit").value = "day"; 
       }
 
       updateDateDisplay();
