@@ -1131,224 +1131,25 @@ svg.bg-bottom-active .prov {
   }
 
 async function downloadPNG() {
+    const target = document.getElementById("mapContainer");
 
-    const svg = document.getElementById("mapSvg");
-    if (!svg) return;
-
-    console.clear();
-    console.log("===== PNG保存開始 =====");
-
-    //----------------------------------------
-    // SVG複製
-    //----------------------------------------
-
-    const cloneSvg = svg.cloneNode(true);
-
-    cloneSvg.setAttribute("xmlns","http://www.w3.org/2000/svg");
-    cloneSvg.setAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
-
-    cloneSvg.setAttribute("viewBox","0 0 4000 2000");
-    cloneSvg.setAttribute("width","4000");
-    cloneSvg.setAttribute("height","2000");
-
-    //----------------------------------------
-    // CSS追加
-    //----------------------------------------
-
-    const style = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "style"
-    );
-
-    let css = "";
-
-    css += ".prov{stroke:#111;stroke-width:1;}";
-
-    if(!labelsVisible)
-        css += ".label{display:none!important;}";
-
-    if(!numbersVisible)
-        css += ".prov-number{display:none!important;}";
-
-    if(svg.classList.contains("bg-bottom-active"))
-        css += ".prov{fill-opacity:0.6!important;}";
-
-    style.textContent = css;
-
-    cloneSvg.insertBefore(style, cloneSvg.firstChild);
-
-    //----------------------------------------
-    // imageをBase64へ
-    //----------------------------------------
-
-    const images = cloneSvg.querySelectorAll("image");
-
-    console.log("画像数:",images.length);
-
-    for(const image of images){
-
-        let href =
-            image.getAttribute("href") ||
-            image.getAttributeNS("http://www.w3.org/1999/xlink","href");
-
-        console.log("元画像:",href);
-
-        if(!href) continue;
-
-        if(href.startsWith("data:image")){
-            console.log("既にBase64");
-            continue;
-        }
-
-        try{
-
-            const res = await fetch(href);
-
-            if(!res.ok)
-                throw new Error("fetch失敗");
-
-            const blob = await res.blob();
-
-            const base64 = await new Promise(resolve=>{
-
-                const reader=new FileReader();
-
-                reader.onload=()=>resolve(reader.result);
-
-                reader.readAsDataURL(blob);
-
-            });
-
-            image.setAttribute("href",base64);
-
-            image.setAttributeNS(
-                "http://www.w3.org/1999/xlink",
-                "xlink:href",
-                base64
-            );
-
-            console.log("Base64変換成功");
-
-        }
-        catch(err){
-
-            console.error("画像変換失敗",href);
-
-            image.remove();
-
-        }
-
-    }
-
-    //----------------------------------------
-    // SVG文字列
-    //----------------------------------------
-
-    const svgText =
-        '<?xml version="1.0" standalone="no"?>\n'
-        + new XMLSerializer().serializeToString(cloneSvg);
-
-    console.log("SVGサイズ:",svgText.length);
-
-    //----------------------------------------
-    // debug.svg保存
-    //----------------------------------------
-
-    {
-
-        const blob=new Blob([svgText],{
-            type:"image/svg+xml"
+    try {
+        const canvas = await html2canvas(target, {
+            backgroundColor: null, // 背景透過。白背景なら "#fff"
+            useCORS: true,
+            allowTaint: false,
+            scale: window.devicePixelRatio * 2 // 高解像度化
         });
 
-        const a=document.createElement("a");
+        const link = document.createElement("a");
+        link.download = "map.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
 
-        a.href=URL.createObjectURL(blob);
-
-        a.download="debug.svg";
-
-        a.click();
-
-    }
-
-    //----------------------------------------
-    // Blob
-    //----------------------------------------
-
-    const blob=new Blob(
-        [svgText],
-        {
-            type:"image/svg+xml;charset=utf-8"
-        }
-    );
-
-    const objectURL=URL.createObjectURL(blob);
-
-    console.log("BlobURL:",objectURL);
-
-    //----------------------------------------
-    // Image
-    //----------------------------------------
-
-    const img=new Image();
-
-    img.onload=()=>{
-
-        console.log("SVG読込成功");
-
-        const canvas=document.createElement("canvas");
-
-        canvas.width=4000;
-        canvas.height=2000;
-
-        const ctx=canvas.getContext("2d");
-
-        try{
-
-            ctx.drawImage(img,0,0);
-
-            console.log("Canvas描画成功");
-
-            const png=canvas.toDataURL("image/png");
-
-            const a=document.createElement("a");
-
-            a.download="map.png";
-
-            a.href=png;
-
-            a.click();
-
-            console.log("PNG保存成功");
-
-        }
-        catch(err){
-
-            console.error("Canvas描画失敗",err);
-
-        }
-
-        URL.revokeObjectURL(objectURL);
-
-    };
-
-    img.onerror=(e)=>{
-
-        console.error("SVG読み込み失敗");
-
+    } catch (e) {
         console.error(e);
-
-        console.log("↓↓ cloneSVG ↓↓");
-
-        console.log(cloneSvg.outerHTML);
-
-        alert("SVGが読み込めませんでした。debug.svgをChromeで開いて確認してください。");
-
-        URL.revokeObjectURL(objectURL);
-
-    };
-
-    img.src=objectURL;
-
+        alert("PNG保存に失敗しました。");
+    }
 }
   // === スマホ・PC共通のドラッグ ＆ ピンチズーム処理 ===
   const svg = document.getElementById("mapSvg");
