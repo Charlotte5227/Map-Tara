@@ -1130,47 +1130,67 @@ svg.bg-bottom-active .prov {
     }
   }
 
-  function downloadPNG() {
+async function downloadPNG() {
     const svg = document.getElementById("mapSvg");
-    const originalViewBox = svg.getAttribute("viewBox");
-    svg.setAttribute("viewBox", "0 0 5000 2500");
-    svg.setAttribute("width", "5000");
-    svg.setAttribute("height", "2500");
+    
+    // 1. 保存用のクローンを作成（元の画面には影響を与えないため）
+    const cloneSvg = svg.cloneNode(true);
+    cloneSvg.setAttribute("viewBox", "0 0 5000 2500");
+    cloneSvg.setAttribute("width", "5000");
+    cloneSvg.setAttribute("height", "2500");
 
-    const exportStyle = document.createElementNS("http://www.w3.org/2000/svg", "style");
-    let cssText = "";
+    // 2. CSSのスタイルを注入
+    const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    let cssText = ".prov { stroke: #111; stroke-width: 1; }\n";
     if (!labelsVisible) cssText += ".label { display: none !important; }\n";
     if (!numbersVisible) cssText += ".prov-number { display: none !important; }\n";
     if (svg.classList.contains("bg-bottom-active")) {
       cssText += ".prov { fill-opacity: 0.6 !important; }\n";
     }
-    exportStyle.textContent = cssText;
-    svg.appendChild(exportStyle);
+    style.textContent = cssText;
+    cloneSvg.insertBefore(style, cloneSvg.firstChild);
 
+    // 3. 全ての画像要素を確実にBase64化する（これが重要）
+    const images = cloneSvg.querySelectorAll("image");
+    for (let img of images) {
+      const url = img.getAttribute("href");
+      if (url && !url.startsWith("data:")) {
+        try {
+          const res = await fetch(url);
+          const blob = await res.blob();
+          const base64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+          img.setAttribute("href", base64);
+        } catch (e) {
+          console.error("画像読み込み失敗:", e);
+        }
+      }
+    }
+
+    // 4. SVGをシリアライズしてCanvasへ
     const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(svg);
-
-    svg.removeChild(exportStyle);
-    if (originalViewBox) svg.setAttribute("viewBox", originalViewBox);
-    else svg.removeAttribute("viewBox");
-    svg.removeAttribute("width");
-    svg.removeAttribute("height");
-
+    const svgString = serializer.serializeToString(cloneSvg);
     const canvas = document.createElement("canvas");
-    canvas.width = 5000; canvas.height = 2500;
+    canvas.width = 5000;
+    canvas.height = 2500;
     const ctx = canvas.getContext("2d");
+    
     const img = new Image();
     const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
 
     img.onload = function() {
-      ctx.drawImage(img, 0, 0, 5000, 2500);
+      ctx.drawImage(img, 0, 0);
       URL.revokeObjectURL(url);
       const a = document.createElement("a");
       a.download = "map.png";
       a.href = canvas.toDataURL("image/png");
       a.click();
     };
+    img.onerror = () => alert("PNG生成中にエラーが発生しました。");
     img.src = url;
   }
 
