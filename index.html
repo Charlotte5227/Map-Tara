@@ -1132,14 +1132,15 @@ svg.bg-bottom-active .prov {
 
 async function downloadPNG() {
     const svg = document.getElementById("mapSvg");
-    
-    // 1. 保存用のクローンを作成（元の画面には影響を与えないため）
+    if (!svg) return;
+
+    // 1. 保存用のクローンを作成（元の画面には影響を与えない）
     const cloneSvg = svg.cloneNode(true);
     cloneSvg.setAttribute("viewBox", "0 0 5000 2500");
     cloneSvg.setAttribute("width", "5000");
     cloneSvg.setAttribute("height", "2500");
 
-    // 2. CSSのスタイルを注入
+    // 2. CSSのスタイルを注入（現在の表示状態を反映）
     const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
     let cssText = ".prov { stroke: #111; stroke-width: 1; }\n";
     if (!labelsVisible) cssText += ".label { display: none !important; }\n";
@@ -1150,9 +1151,9 @@ async function downloadPNG() {
     style.textContent = cssText;
     cloneSvg.insertBefore(style, cloneSvg.firstChild);
 
-    // 3. 全ての画像要素を確実にBase64化する（これが重要）
+    // 3. 画像のBase64化を確実に待つ
     const images = cloneSvg.querySelectorAll("image");
-    for (let img of images) {
+    const imagePromises = Array.from(images).map(async (img) => {
       const url = img.getAttribute("href");
       if (url && !url.startsWith("data:")) {
         try {
@@ -1165,12 +1166,13 @@ async function downloadPNG() {
           });
           img.setAttribute("href", base64);
         } catch (e) {
-          console.error("画像読み込み失敗:", e);
+          console.warn("画像読み込み失敗:", url, e);
         }
       }
-    }
+    });
+    await Promise.all(imagePromises); // 全画像の変換が終わるまで待機
 
-    // 4. SVGをシリアライズしてCanvasへ
+    // 4. SVGをシリアライズ
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(cloneSvg);
     const canvas = document.createElement("canvas");
@@ -1178,20 +1180,31 @@ async function downloadPNG() {
     canvas.height = 2500;
     const ctx = canvas.getContext("2d");
     
+    // 5. Imageオブジェクト経由でCanvasに描画
     const img = new Image();
     const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
 
-    img.onload = function() {
-      ctx.drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
-      const a = document.createElement("a");
-      a.download = "map.png";
-      a.href = canvas.toDataURL("image/png");
-      a.click();
-    };
-    img.onerror = () => alert("PNG生成中にエラーが発生しました。");
-    img.src = url;
+    return new Promise((resolve, reject) => {
+      img.onload = () => {
+        try {
+          ctx.drawImage(img, 0, 0);
+          URL.revokeObjectURL(url);
+          const a = document.createElement("a");
+          a.download = "map.png";
+          a.href = canvas.toDataURL("image/png");
+          a.click();
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      };
+      img.onerror = (err) => reject(err);
+      img.src = url;
+    }).catch(err => {
+      console.error("PNG保存エラー詳細:", err);
+      alert("PNG生成中にエラーが発生しました。ブラウザのコンソール(F12)を確認してください。");
+    });
   }
 
   // === スマホ・PC共通のドラッグ ＆ ピンチズーム処理 ===
