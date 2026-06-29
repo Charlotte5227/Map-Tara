@@ -1134,13 +1134,11 @@ async function downloadPNG() {
     const svg = document.getElementById("mapSvg");
     if (!svg) return;
 
-    // 1. クローンを作成
     const cloneSvg = svg.cloneNode(true);
     cloneSvg.setAttribute("viewBox", "0 0 5000 2500");
     cloneSvg.setAttribute("width", "5000");
     cloneSvg.setAttribute("height", "2500");
 
-    // 2. スタイル注入
     const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
     let cssText = ".prov { stroke: #111; stroke-width: 1; }\n";
     if (!labelsVisible) cssText += ".label { display: none !important; }\n";
@@ -1151,7 +1149,7 @@ async function downloadPNG() {
     style.textContent = cssText;
     cloneSvg.insertBefore(style, cloneSvg.firstChild);
 
-    // 3. 画像のBase64化（ここは前と同じですが、念のため）
+    // 画像のBase64変換（エラー時は読み込まないことでCanvasエラーを回避）
     const images = cloneSvg.querySelectorAll("image");
     for (let img of images) {
       const url = img.getAttribute("href") || img.getAttribute("xlink:href");
@@ -1165,20 +1163,21 @@ async function downloadPNG() {
             reader.readAsDataURL(blob);
           });
           img.setAttribute("href", base64);
-        } catch (e) { console.warn("画像読み込み失敗:", e); }
+        } catch (e) {
+          console.warn("画像読み込み失敗:", url);
+          img.remove(); // 読み込めない画像は削除してエラーを回避
+        }
       }
     }
 
-    // 4. SVG文字列を生成
     const svgString = new XMLSerializer().serializeToString(cloneSvg);
     const canvas = document.createElement("canvas");
-    canvas.width = 5000;
-    canvas.height = 2500;
+    canvas.width = 5000; canvas.height = 2500;
     const ctx = canvas.getContext("2d");
-
-    // ★重要: SVG文字列を直接URL化せず、XMLとして読み込ませる
+    
     const img = new Image();
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
 
     img.onload = () => {
       ctx.drawImage(img, 0, 0);
@@ -1186,11 +1185,13 @@ async function downloadPNG() {
       a.download = "map.png";
       a.href = canvas.toDataURL("image/png");
       a.click();
+      URL.revokeObjectURL(url);
     };
     img.onerror = (e) => {
       console.error("Canvas描画失敗:", e);
-      alert("地図の画像化に失敗しました。背景地図をオフにして試してみてください。");
+      alert("PNG生成失敗: 画像リソースを確認してください");
     };
+    img.src = url;
   }
   // === スマホ・PC共通のドラッグ ＆ ピンチズーム処理 ===
   const svg = document.getElementById("mapSvg");
@@ -1298,10 +1299,15 @@ async function downloadPNG() {
 
     if(viewBox.w * zoomFactor < 500 || viewBox.w * zoomFactor > 8000) return;
 
+    // マウス位置を基準にズーム計算
+    const dx = (mouseX / svg.clientWidth) * viewBox.w;
+    const dy = (mouseY / svg.clientHeight) * viewBox.h;
+
+    viewBox.x = (viewBox.x + dx) - (dx * zoomFactor);
+    viewBox.y = (viewBox.y + dy) - (dy * zoomFactor);
     viewBox.w *= zoomFactor;
     viewBox.h *= zoomFactor;
-    viewBox.x = svgX - (mouseX / svg.clientWidth) * viewBox.w;
-    viewBox.y = svgY - (mouseY / svg.clientHeight) * viewBox.h;
+    
     updateViewBox();
   }, { passive: false });
 
