@@ -1,5 +1,9 @@
 [
   {
+    "type": "metadata",
+    "date": "西暦 1786年 01月 28日"
+  },
+  {
     "type": "country",
     "name": "美梅帝国",
     "color": "#ff4444",
@@ -146,7 +150,7 @@
       "path233",
       "path226"
     ],
-    "labelText": "",
+    "labelText": "アルカディア解放戦線",
     "labelFontSize": 18,
     "labelX": "2785.4959716796875",
     "labelY": "1492.5328979492188",
