@@ -1141,15 +1141,22 @@ async function downloadPNG() {
     cloneSvg.setAttribute("viewBox", "0 0 5000 2500");
     cloneSvg.setAttribute("width", "5000");
     cloneSvg.setAttribute("height", "2500");
+    // Canvas描画に必須のネームスペースを確実に追加
+    cloneSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
 
-    // 2. CSSのスタイルを注入
+    // 2. ★修正: プロビンスとラベルの「見た目（CSS）」を完全にSVG内に埋め込む
     const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
-    let cssText = ".prov { stroke: #111; stroke-width: 1; }\n";
+    let cssText = `
+      .prov { fill: #FEF9DB; stroke: #111; stroke-width: 1; }
+      .label { font-family: sans-serif; font-size: 18px; font-weight: 800; fill: #fff; stroke: #000; stroke-width: 6px; paint-order: stroke fill; text-anchor: middle; dominant-baseline: middle; }
+      .prov-number { font-family: sans-serif; font-weight: bold; fill: #333; text-anchor: middle; dominant-baseline: middle; }
+    `;
+
+    // 表示ON/OFF状態の反映
     if (typeof labelsVisible !== 'undefined' && !labelsVisible) cssText += ".label { display: none !important; }\n";
     if (typeof numbersVisible !== 'undefined' && !numbersVisible) cssText += ".prov-number { display: none !important; }\n";
-    if (svg.classList.contains("bg-bottom-active")) {
-      cssText += ".prov { fill-opacity: 0.6 !important; }\n";
-    }
+    if (svg.classList.contains("bg-bottom-active")) cssText += ".prov { fill-opacity: 0.6 !important; }\n";
+    
     style.textContent = cssText;
     cloneSvg.insertBefore(style, cloneSvg.firstChild);
 
@@ -1161,17 +1168,17 @@ async function downloadPNG() {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 4. ★最重要: SVG内にある全ての「画像」を抜き出して、SVGから消し去る
+    // 4. SVG内にある全ての「画像」を抜き出して、SVGから消し去る（エラー回避）
     const images = cloneSvg.querySelectorAll("image");
     const extractedImages = [];
     for (let imgNode of images) {
       const url = imgNode.getAttribute("href") || imgNode.getAttribute("xlink:href");
       const parent = imgNode.parentNode;
-      const isTop = parent && parent.id === "bg-layer-top"; // 大陸名などのトップレイヤーか判定
+      const isTop = parent && parent.id === "bg-layer-top";
       if (url) {
         extractedImages.push({ url: url, isTop: isTop });
       }
-      imgNode.remove(); // SVG本体からは消して軽くする
+      imgNode.remove(); // SVG本体からは消す
     }
 
     // URLから画像を読み込む専用の関数（エラー回避・改行コード除去つき）
@@ -1183,7 +1190,6 @@ async function downloadPNG() {
         img.onerror = () => resolve(null); // エラーでも止まらせない
 
         if (imgUrl.startsWith("data:")) {
-          // 諸悪の根源である base64 内の改行コードをすべて綺麗に削除する
           img.src = imgUrl.replace(/(\r\n|\n|\r|&#10;)/gm, "");
         } else {
           try {
@@ -1203,7 +1209,7 @@ async function downloadPNG() {
       }
     }
 
-    // 6. 【合成 第2層】画像が消えて軽くなったSVG（国境線やプロビンス）を描画
+    // 6. 【合成 第2層】SVG（国境線やプロビンス、国名ラベル）を描画
     const svgString = new XMLSerializer().serializeToString(cloneSvg);
     const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
     const svgUrl = URL.createObjectURL(svgBlob);
@@ -1235,7 +1241,7 @@ async function downloadPNG() {
       a.href = canvas.toDataURL("image/png");
       a.click();
     } catch (e) {
-      alert("保存エラー：CORSによるセキュリティ制限がかかっています。");
+      alert("保存エラー：画像化に失敗しました。");
       console.error(e);
     }
   }
