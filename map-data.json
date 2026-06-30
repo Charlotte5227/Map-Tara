@@ -1,9 +1,5 @@
 [
   {
-    "type": "metadata",
-    "date": "西暦 1790年 01月 01日"
-  },
-  {
     "type": "country",
     "name": "美梅帝国",
     "color": "#ff4444",
@@ -167,6 +163,19 @@
     "labelFontSize": 18,
     "labelX": "541.0628051757812",
     "labelY": "805.0291519165039",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "タクラスティーニ王国",
+    "color": "#ff6a00",
+    "provinces": [
+      "path266"
+    ],
+    "labelText": "タクラスティーニ王国",
+    "labelFontSize": 18,
+    "labelX": "1920.2381439208984",
+    "labelY": "1569.5126342773438",
     "lockCenter": false
   },
   {
