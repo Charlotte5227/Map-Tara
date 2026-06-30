@@ -179,6 +179,19 @@
     "lockCenter": false
   },
   {
+    "type": "country",
+    "name": "新共和国",
+    "color": "#000000",
+    "provinces": [
+      "path231"
+    ],
+    "labelText": "新共和国",
+    "labelFontSize": 18,
+    "labelX": "2960.9261169433594",
+    "labelY": "1480.9442138671875",
+    "lockCenter": false
+  },
+  {
     "type": "provNumber",
     "provId": "path158",
     "text": "1",
