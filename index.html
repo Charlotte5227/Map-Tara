@@ -202,7 +202,7 @@ svg.bg-bottom-active .prov {
   
   <button onclick="zoomIn()">＋ 拡大</button>
   <button onclick="zoomOut()">－ 縮小</button>
-  <button onclick="downloadPNG()">PNG保存</button>
+  <button onclick="takeScreenshot()">PNG保存</button>
   <button id="toggleBtn">国名を非表示</button>
   <button id="toggleNumBtn">番号を表示</button>
 </div>
@@ -1132,75 +1132,32 @@ svg.bg-bottom-active .prov {
     }
   }
 
-async function downloadPNG() {
-    const svg = document.getElementById("mapSvg");
-    if (!svg) return;
-
-    // 1. キャンバスの準備
-    const canvas = document.createElement("canvas");
-    canvas.width = 5000;
-    canvas.height = 2500;
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, 5000, 2500);
-
-    // 2. 現在表示されているすべての画像を取得
-    const images = svg.querySelectorAll("image");
-    
-    // 画像がある場合は先に描画
-    for (let imgNode of images) {
-        if (imgNode.style.display === "none") continue;
-        const url = imgNode.getAttribute("href") || imgNode.getAttribute("xlink:href");
-        if (!url) continue;
-
-        const img = await new Promise(resolve => {
-            const i = new Image();
-            i.crossOrigin = "anonymous";
-            i.onload = () => resolve(i);
-            i.onerror = () => resolve(null);
-            i.src = url;
-        });
-
-        if (img) {
-            ctx.drawImage(img, 0, 0, 5000, 2500);
-        }
+async function takeScreenshot() {
+    // 1. html2canvas ライブラリを読み込む
+    if (typeof html2canvas === 'undefined') {
+        const script = document.createElement('script');
+        script.src = "https://html2canvas.hertzen.com/dist/html2canvas.min.js";
+        document.head.appendChild(script);
+        await new Promise(resolve => script.onload = resolve);
     }
 
-    // 3. SVGから画像だけを取り除いた「線画コピー」を作る
-    const cleanSvg = svg.cloneNode(true);
-    cleanSvg.querySelectorAll("image").forEach(i => i.remove());
+    const container = document.getElementById("mapContainer");
     
-    // スタイルを注入
-    const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
-    style.textContent = `
-        .prov { fill: none; stroke: #111; stroke-width: 1; }
-        .label { font-family: sans-serif; font-size: 18px; font-weight: 800; fill: #fff; stroke: #000; stroke-width: 6px; paint-order: stroke fill; text-anchor: middle; }
-        .prov-number { font-family: sans-serif; font-weight: bold; fill: #333; text-anchor: middle; }
-    `;
-    cleanSvg.insertBefore(style, cleanSvg.firstChild);
-
-    // 4. SVGを画像化
-    const svgString = new XMLSerializer().serializeToString(cleanSvg);
-    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
-
-    const svgImg = await new Promise(resolve => {
-        const i = new Image();
-        i.onload = () => resolve(i);
-        i.onerror = () => resolve(null);
-        i.src = url;
+    // 2. 画面をスクショ
+    html2canvas(container, {
+        useCORS: true,       // 外部画像も可能な限り許可
+        allowTaint: true,    // 多少の汚染があっても強引に画像化
+        backgroundColor: '#ffffff'
+    }).then(canvas => {
+        // 3. ダウンロード処理
+        const link = document.createElement("a");
+        link.download = "map-screenshot.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    }).catch(err => {
+        console.error(err);
+        alert("スクリーンショットの取得に失敗しました。地形図レイヤーを一度オフにして試してください。");
     });
-
-    if (svgImg) {
-        ctx.drawImage(svgImg, 0, 0, 5000, 2500);
-    }
-    URL.revokeObjectURL(url);
-
-    // 5. ダウンロード
-    const link = document.createElement("a");
-    link.download = "map.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
 }
   // === スマホ・PC共通のドラッグ ＆ ピンチズーム処理 ===
   const svg = document.getElementById("mapSvg");
