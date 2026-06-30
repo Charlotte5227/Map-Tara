@@ -1141,109 +1141,95 @@ async function downloadPNG() {
     cloneSvg.setAttribute("viewBox", "0 0 5000 2500");
     cloneSvg.setAttribute("width", "5000");
     cloneSvg.setAttribute("height", "2500");
-    // Canvas描画に必須のネームスペースを確実に追加
     cloneSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
 
-    // 2. ★修正: プロビンスとラベルの「見た目（CSS）」を完全にSVG内に埋め込む
-    const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
-    let cssText = `
-      .prov { fill: #FEF9DB; stroke: #111; stroke-width: 1; }
-      .label { font-family: sans-serif; font-size: 18px; font-weight: 800; fill: #fff; stroke: #000; stroke-width: 6px; paint-order: stroke fill; text-anchor: middle; dominant-baseline: middle; }
-      .prov-number { font-family: sans-serif; font-weight: bold; fill: #333; text-anchor: middle; dominant-baseline: middle; }
-    `;
-
-    // 表示ON/OFF状態の反映
-    if (typeof labelsVisible !== 'undefined' && !labelsVisible) cssText += ".label { display: none !important; }\n";
-    if (typeof numbersVisible !== 'undefined' && !numbersVisible) cssText += ".prov-number { display: none !important; }\n";
-    if (svg.classList.contains("bg-bottom-active")) cssText += ".prov { fill-opacity: 0.6 !important; }\n";
+    // 2. ★重要: ページ内のCSS(デザイン)をすべてコピーしてSVG内に埋め込む
+    // これにより、ラベルの文字色や、プロビンスの半透明化などが画面と100%一致します
+    let combinedStyles = "";
+    document.querySelectorAll("style").forEach(s => {
+      combinedStyles += s.innerHTML + "\n";
+    });
     
-    style.textContent = cssText;
-    cloneSvg.insertBefore(style, cloneSvg.firstChild);
+    // 現在の表示/非表示状態のスタイルを追加
+    if (typeof labelsVisible !== 'undefined' && !labelsVisible) {
+      combinedStyles += ".label { display: none !important; }\n";
+    }
+    if (typeof numbersVisible !== 'undefined' && !numbersVisible) {
+      combinedStyles += ".prov-number { display: none !important; }\n";
+    }
+    if (svg.classList.contains("bg-bottom-active")) {
+      combinedStyles += ".prov { fill-opacity: 0.6 !important; }\n";
+    }
 
-    // 3. 画用紙（Canvas）を準備し、白で塗りつぶす（背景の透過防止）
+    const styleTag = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    styleTag.textContent = combinedStyles;
+    cloneSvg.insertBefore(styleTag, cloneSvg.firstChild);
+
+    // 3. 全ての <image> タグのデータをクリーンアップ（改行除去・Base64化）
+    const images = cloneSvg.querySelectorAll("image");
+    const imagePromises = Array.from(images).map(async (img) => {
+      let url = img.getAttribute("href") || img.getAttribute("xlink:href");
+      if (!url) return;
+
+      if (url.startsWith("data:")) {
+        // Base64内の不正な改行文字を削除
+        const cleanUrl = url.replace(/(\r\n|\n|\r|&#10;)/gm, "");
+        img.setAttribute("href", cleanUrl);
+        img.removeAttribute("xlink:href"); // 古い仕様の属性を削除
+      } else {
+        // 外部URLの画像なら、読み込んでBase64に変換して埋め込む
+        try {
+          const res = await fetch(url, { mode: 'cors' });
+          const blob = await res.blob();
+          const base64 = await new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+          img.setAttribute("href", base64);
+          img.removeAttribute("xlink:href");
+        } catch (e) {
+          console.warn("画像の埋め込みに失敗しました:", url);
+          img.remove(); // 読み込めない画像は消去してエラーを防ぐ
+        }
+      }
+    });
+
+    // 全ての画像の変換が終わるまで待つ
+    await Promise.all(imagePromises);
+
+    // 4. 画用紙（Canvas）を準備
     const canvas = document.createElement("canvas");
     canvas.width = 5000;
     canvas.height = 2500;
     const ctx = canvas.getContext("2d");
+    
+    // 背景を白で塗りつぶす（透過を防ぐため）
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 4. SVG内にある全ての「画像」を抜き出して、SVGから消し去る（エラー回避）
-    const images = cloneSvg.querySelectorAll("image");
-    const extractedImages = [];
-    for (let imgNode of images) {
-      const url = imgNode.getAttribute("href") || imgNode.getAttribute("xlink:href");
-      const parent = imgNode.parentNode;
-      const isTop = parent && parent.id === "bg-layer-top";
-      if (url) {
-        extractedImages.push({ url: url, isTop: isTop });
-      }
-      imgNode.remove(); // SVG本体からは消す
-    }
-
-    // URLから画像を読み込む専用の関数（エラー回避・改行コード除去つき）
-    const loadImage = async (imgUrl) => {
-      return new Promise(async (resolve) => {
-        const img = new Image();
-        img.crossOrigin = "Anonymous"; 
-        img.onload = () => resolve(img);
-        img.onerror = () => resolve(null); // エラーでも止まらせない
-
-        if (imgUrl.startsWith("data:")) {
-          img.src = imgUrl.replace(/(\r\n|\n|\r|&#10;)/gm, "");
-        } else {
-          try {
-            const res = await fetch(imgUrl, { mode: 'cors' });
-            const blob = await res.blob();
-            img.src = URL.createObjectURL(blob);
-          } catch (e) { resolve(null); }
-        }
-      });
-    };
-
-    // 5. 【合成 第1層】下敷きとなる地図画像（ボトムレイヤー）を描画
-    for (let item of extractedImages) {
-      if (!item.isTop) {
-        const imgObj = await loadImage(item.url);
-        if (imgObj) ctx.drawImage(imgObj, 0, 0, 5000, 2500);
-      }
-    }
-
-    // 6. 【合成 第2層】SVG（国境線やプロビンス、国名ラベル）を描画
+    // 5. SVGをシリアライズして画像化
     const svgString = new XMLSerializer().serializeToString(cloneSvg);
     const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
     const svgUrl = URL.createObjectURL(svgBlob);
-    
-    const svgImg = await new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-      img.src = svgUrl;
-    });
 
-    if (svgImg) {
-      ctx.drawImage(svgImg, 0, 0, 5000, 2500);
-    }
-    URL.revokeObjectURL(svgUrl);
-
-    // 7. 【合成 第3層】大陸名や地域名などの画像（トップレイヤー）を描画
-    for (let item of extractedImages) {
-      if (item.isTop) {
-        const imgObj = await loadImage(item.url);
-        if (imgObj) ctx.drawImage(imgObj, 0, 0, 5000, 2500);
-      }
-    }
-
-    // 8. 最後に完成したCanvasをダウンロード
-    try {
+    const img = new Image();
+    img.onload = () => {
+      // 6. CanvasにSVGを描画してダウンロード
+      ctx.drawImage(img, 0, 0, 5000, 2500);
+      URL.revokeObjectURL(svgUrl);
+      
       const a = document.createElement("a");
       a.download = "map.png";
       a.href = canvas.toDataURL("image/png");
       a.click();
-    } catch (e) {
-      alert("保存エラー：画像化に失敗しました。");
-      console.error(e);
-    }
+    };
+    img.onerror = (e) => {
+      console.error("Canvas描画エラー", e);
+      alert("PNGの生成に失敗しました。");
+      URL.revokeObjectURL(svgUrl);
+    };
+    img.src = svgUrl;
   }
   // === スマホ・PC共通のドラッグ ＆ ピンチズーム処理 ===
   const svg = document.getElementById("mapSvg");
