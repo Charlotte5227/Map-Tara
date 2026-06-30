@@ -1,9 +1,5 @@
 [
   {
-    "type": "metadata",
-    "date": "西暦 1786年 01月 28日"
-  },
-  {
     "type": "country",
     "name": "美梅帝国",
     "color": "#ff4444",
@@ -154,6 +150,19 @@
     "labelFontSize": 18,
     "labelX": "2785.4959716796875",
     "labelY": "1492.5328979492188",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "バロル共和国",
+    "color": "#ff4444",
+    "provinces": [
+      "path175"
+    ],
+    "labelText": "バロル共和国",
+    "labelFontSize": 18,
+    "labelX": "541.0628051757812",
+    "labelY": "805.0291519165039",
     "lockCenter": false
   },
   {
@@ -777,8 +786,8 @@
     "provId": "path236",
     "text": "78",
     "fontSize": "20",
-    "x": "2619",
-    "y": "1514"
+    "x": "2556.022044437767",
+    "y": "1614.0899650899773"
   },
   {
     "type": "provNumber",
@@ -1095,7 +1104,7 @@
     "type": "freeLabel",
     "text": "アルカディア解放戦線",
     "fontSize": 18,
-    "x": "2853.9762409438435",
-    "y": "1544.9080144376835"
+    "x": "2541.3356758313303",
+    "y": "1315.4883191752635"
   }
 ]
