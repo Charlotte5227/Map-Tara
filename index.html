@@ -202,7 +202,6 @@ svg.bg-bottom-active .prov {
   
   <button onclick="zoomIn()">＋ 拡大</button>
   <button onclick="zoomOut()">－ 縮小</button>
-  <button onclick="takeScreenshot()">PNG保存</button>
   <button id="toggleBtn">国名を非表示</button>
   <button id="toggleNumBtn">番号を表示</button>
 </div>
@@ -1131,41 +1130,6 @@ svg.bg-bottom-active .prov {
       document.getElementById("statusIndicator").textContent = "同期エラー発生中";
     }
   }
-
-async function takeScreenshot() {
-    const mapContainer = document.getElementById("mapContainer");
-    const svg = document.getElementById("mapSvg");
-
-    // 1. svgの現在の状態を「画像」としてCanvasに書き出す
-    const canvas = document.createElement("canvas");
-    canvas.width = mapContainer.clientWidth;
-    canvas.height = mapContainer.clientHeight;
-    const ctx = canvas.getContext("2d");
-
-    // 地図の背景色を確保
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // SVGをXML文字列にして、一旦画像オブジェクトにする
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const blob = new Blob([svgData], {type: "image/svg+xml;charset=utf-8"});
-    const url = URL.createObjectURL(blob);
-
-    const img = new Image();
-    img.onload = () => {
-        // 現在のViewBoxのサイズを考慮して描画
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        // ダウンロード
-        const link = document.createElement("a");
-        link.download = "map-screenshot.png";
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-        
-        URL.revokeObjectURL(url);
-    };
-    img.src = url;
-}
   // === スマホ・PC共通のドラッグ ＆ ピンチズーム処理 ===
   const svg = document.getElementById("mapSvg");
   let isDragging = false;
