@@ -1134,78 +1134,44 @@ svg.bg-bottom-active .prov {
 
 async function downloadPNG() {
     const svg = document.getElementById("mapSvg");
-    if (!svg) return;
+    if (!svg) {
+        alert("地図が見つかりません。");
+        return;
+    }
 
-    // 1. 保存用のCanvas準備（SVGと同じ解像度）
+    // キャンバスの作成
     const canvas = document.createElement("canvas");
     canvas.width = 5000;
     canvas.height = 2500;
     const ctx = canvas.getContext("2d");
-    
-    // 背景を白で塗りつぶす
+
+    // 白背景で塗りつぶし
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, 5000, 2500);
 
-    // 2. 「画像」レイヤーを先に取得・描画
-    const images = svg.querySelectorAll("image");
-    for (let imgNode of images) {
-        if (imgNode.style.display === "none") continue; // 非表示の背景地図はスキップ
+    // SVGを画像化して描画（文字列変換なしの最新手法）
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([svgData], {type: "image/svg+xml;charset=utf-8"});
+    const url = URL.createObjectURL(svgBlob);
+    
+    const img = new Image();
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, 5000, 2500);
         
-        const url = imgNode.getAttribute("href") || imgNode.getAttribute("xlink:href");
-        if (!url) continue;
-
-        const img = await new Promise(resolve => {
-            const i = new Image();
-            i.crossOrigin = "Anonymous";
-            i.onload = () => resolve(i);
-            i.onerror = () => resolve(null);
-            i.src = url;
-        });
-
-        if (img) {
-            ctx.drawImage(img, 0, 0, 5000, 2500);
-        }
-    }
-
-    // 3. SVGの「線と文字」部分だけを別SVGとして抽出して描画
-    // 画像タグを一時的に取り除いた「軽いSVG」を作ります
-    const cleanSvg = svg.cloneNode(true);
-    cleanSvg.querySelectorAll("image").forEach(i => i.remove());
-    
-    // スタイルを注入（国境線や文字など）
-    const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
-    style.textContent = `
-        .prov { fill: #FEF9DB; stroke: #111; stroke-width: 1; }
-        .label { font-family: sans-serif; font-size: 18px; font-weight: 800; fill: #fff; stroke: #000; stroke-width: 6px; paint-order: stroke fill; text-anchor: middle; }
-        .prov-number { font-family: sans-serif; font-weight: bold; fill: #333; text-anchor: middle; }
-        ${svg.classList.contains("bg-bottom-active") ? ".prov { fill-opacity: 0.6; }" : ""}
-        ${(!labelsVisible) ? ".label { display: none; }" : ""}
-        ${(!numbersVisible) ? ".prov-number { display: none; }" : ""}
-    `;
-    cleanSvg.insertBefore(style, cleanSvg.firstChild);
-
-    const svgString = new XMLSerializer().serializeToString(cleanSvg);
-    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-    const svgUrl = URL.createObjectURL(svgBlob);
-
-    const svgImg = await new Promise(resolve => {
-        const i = new Image();
-        i.onload = () => resolve(i);
-        i.src = svgUrl;
-    });
-
-    if (svgImg) {
-        ctx.drawImage(svgImg, 0, 0, 5000, 2500);
-    }
-
-    // 4. ダウンロード
-    const a = document.createElement("a");
-    a.download = "map.png";
-    a.href = canvas.toDataURL("image/png");
-    a.click();
-    
-    URL.revokeObjectURL(svgUrl);
-  }
+        // ダウンロード実行
+        const a = document.createElement("a");
+        a.download = "map.png";
+        a.href = canvas.toDataURL("image/png");
+        a.click();
+        
+        URL.revokeObjectURL(url);
+    };
+    img.onerror = (err) => {
+        console.error(err);
+        alert("PNGの生成に失敗しました。コンソール(F12)を確認してください。");
+    };
+    img.src = url;
+}
   // === スマホ・PC共通のドラッグ ＆ ピンチズーム処理 ===
   const svg = document.getElementById("mapSvg");
   let isDragging = false;
