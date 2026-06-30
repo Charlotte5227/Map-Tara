@@ -1,7 +1,7 @@
 {
   "calendarName": "西暦",
-  "baseGameDate": "1786-01-28",
-  "baseRealTime": 1782773919691,
+  "baseGameDate": "1790-01-01",
+  "baseRealTime": 1782795595230,
   "stepLengthMs": 21600000,
   "stepUnit": "month"
 }
