@@ -1133,39 +1133,112 @@ svg.bg-bottom-active .prov {
   }
 
 async function downloadPNG() {
+    const svg = document.getElementById("mapSvg");
+    if (!svg) return;
 
-    const node = document.getElementById("mapContainer");
+    // 1. 元の画面に影響を与えないようクローンを作成
+    const cloneSvg = svg.cloneNode(true);
+    cloneSvg.setAttribute("viewBox", "0 0 5000 2500");
+    cloneSvg.setAttribute("width", "5000");
+    cloneSvg.setAttribute("height", "2500");
 
+    // 2. CSSのスタイルを注入
+    const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    let cssText = ".prov { stroke: #111; stroke-width: 1; }\n";
+    if (typeof labelsVisible !== 'undefined' && !labelsVisible) cssText += ".label { display: none !important; }\n";
+    if (typeof numbersVisible !== 'undefined' && !numbersVisible) cssText += ".prov-number { display: none !important; }\n";
+    if (svg.classList.contains("bg-bottom-active")) {
+      cssText += ".prov { fill-opacity: 0.6 !important; }\n";
+    }
+    style.textContent = cssText;
+    cloneSvg.insertBefore(style, cloneSvg.firstChild);
+
+    // 3. 画用紙（Canvas）を準備し、白で塗りつぶす（背景の透過防止）
+    const canvas = document.createElement("canvas");
+    canvas.width = 5000;
+    canvas.height = 2500;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 4. ★最重要: SVG内にある全ての「画像」を抜き出して、SVGから消し去る
+    const images = cloneSvg.querySelectorAll("image");
+    const extractedImages = [];
+    for (let imgNode of images) {
+      const url = imgNode.getAttribute("href") || imgNode.getAttribute("xlink:href");
+      const parent = imgNode.parentNode;
+      const isTop = parent && parent.id === "bg-layer-top"; // 大陸名などのトップレイヤーか判定
+      if (url) {
+        extractedImages.push({ url: url, isTop: isTop });
+      }
+      imgNode.remove(); // SVG本体からは消して軽くする
+    }
+
+    // URLから画像を読み込む専用の関数（エラー回避・改行コード除去つき）
+    const loadImage = async (imgUrl) => {
+      return new Promise(async (resolve) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous"; 
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null); // エラーでも止まらせない
+
+        if (imgUrl.startsWith("data:")) {
+          // 諸悪の根源である base64 内の改行コードをすべて綺麗に削除する
+          img.src = imgUrl.replace(/(\r\n|\n|\r|&#10;)/gm, "");
+        } else {
+          try {
+            const res = await fetch(imgUrl, { mode: 'cors' });
+            const blob = await res.blob();
+            img.src = URL.createObjectURL(blob);
+          } catch (e) { resolve(null); }
+        }
+      });
+    };
+
+    // 5. 【合成 第1層】下敷きとなる地図画像（ボトムレイヤー）を描画
+    for (let item of extractedImages) {
+      if (!item.isTop) {
+        const imgObj = await loadImage(item.url);
+        if (imgObj) ctx.drawImage(imgObj, 0, 0, 5000, 2500);
+      }
+    }
+
+    // 6. 【合成 第2層】画像が消えて軽くなったSVG（国境線やプロビンス）を描画
+    const svgString = new XMLSerializer().serializeToString(cloneSvg);
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    
+    const svgImg = await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = svgUrl;
+    });
+
+    if (svgImg) {
+      ctx.drawImage(svgImg, 0, 0, 5000, 2500);
+    }
+    URL.revokeObjectURL(svgUrl);
+
+    // 7. 【合成 第3層】大陸名や地域名などの画像（トップレイヤー）を描画
+    for (let item of extractedImages) {
+      if (item.isTop) {
+        const imgObj = await loadImage(item.url);
+        if (imgObj) ctx.drawImage(imgObj, 0, 0, 5000, 2500);
+      }
+    }
+
+    // 8. 最後に完成したCanvasをダウンロード
     try {
-
-        const dataUrl = await htmlToImage.toPng(node, {
-
-            cacheBust: true,
-
-            pixelRatio: 4,
-
-            backgroundColor: "#ffffff"
-
-        });
-
-        const link = document.createElement("a");
-
-        link.download = "map.png";
-
-        link.href = dataUrl;
-
-        link.click();
-
+      const a = document.createElement("a");
+      a.download = "map.png";
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    } catch (e) {
+      alert("保存エラー：CORSによるセキュリティ制限がかかっています。");
+      console.error(e);
     }
-    catch (err) {
-
-        console.error(err);
-
-        alert("画像保存に失敗しました。");
-
-    }
-
-}
+  }
   // === スマホ・PC共通のドラッグ ＆ ピンチズーム処理 ===
   const svg = document.getElementById("mapSvg");
   let isDragging = false;
