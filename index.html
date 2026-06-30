@@ -1134,43 +1134,73 @@ svg.bg-bottom-active .prov {
 
 async function downloadPNG() {
     const svg = document.getElementById("mapSvg");
-    if (!svg) {
-        alert("地図が見つかりません。");
-        return;
-    }
+    if (!svg) return;
 
-    // キャンバスの作成
+    // 1. キャンバスの準備
     const canvas = document.createElement("canvas");
     canvas.width = 5000;
     canvas.height = 2500;
     const ctx = canvas.getContext("2d");
-
-    // 白背景で塗りつぶし
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, 5000, 2500);
 
-    // SVGを画像化して描画（文字列変換なしの最新手法）
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const svgBlob = new Blob([svgData], {type: "image/svg+xml;charset=utf-8"});
-    const url = URL.createObjectURL(svgBlob);
+    // 2. 現在表示されているすべての画像を取得
+    const images = svg.querySelectorAll("image");
     
-    const img = new Image();
-    img.onload = () => {
-        ctx.drawImage(img, 0, 0, 5000, 2500);
-        
-        // ダウンロード実行
-        const a = document.createElement("a");
-        a.download = "map.png";
-        a.href = canvas.toDataURL("image/png");
-        a.click();
-        
-        URL.revokeObjectURL(url);
-    };
-    img.onerror = (err) => {
-        console.error(err);
-        alert("PNGの生成に失敗しました。コンソール(F12)を確認してください。");
-    };
-    img.src = url;
+    // 画像がある場合は先に描画
+    for (let imgNode of images) {
+        if (imgNode.style.display === "none") continue;
+        const url = imgNode.getAttribute("href") || imgNode.getAttribute("xlink:href");
+        if (!url) continue;
+
+        const img = await new Promise(resolve => {
+            const i = new Image();
+            i.crossOrigin = "anonymous";
+            i.onload = () => resolve(i);
+            i.onerror = () => resolve(null);
+            i.src = url;
+        });
+
+        if (img) {
+            ctx.drawImage(img, 0, 0, 5000, 2500);
+        }
+    }
+
+    // 3. SVGから画像だけを取り除いた「線画コピー」を作る
+    const cleanSvg = svg.cloneNode(true);
+    cleanSvg.querySelectorAll("image").forEach(i => i.remove());
+    
+    // スタイルを注入
+    const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    style.textContent = `
+        .prov { fill: none; stroke: #111; stroke-width: 1; }
+        .label { font-family: sans-serif; font-size: 18px; font-weight: 800; fill: #fff; stroke: #000; stroke-width: 6px; paint-order: stroke fill; text-anchor: middle; }
+        .prov-number { font-family: sans-serif; font-weight: bold; fill: #333; text-anchor: middle; }
+    `;
+    cleanSvg.insertBefore(style, cleanSvg.firstChild);
+
+    // 4. SVGを画像化
+    const svgString = new XMLSerializer().serializeToString(cleanSvg);
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+
+    const svgImg = await new Promise(resolve => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = () => resolve(null);
+        i.src = url;
+    });
+
+    if (svgImg) {
+        ctx.drawImage(svgImg, 0, 0, 5000, 2500);
+    }
+    URL.revokeObjectURL(url);
+
+    // 5. ダウンロード
+    const link = document.createElement("a");
+    link.download = "map.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
 }
   // === スマホ・PC共通のドラッグ ＆ ピンチズーム処理 ===
   const svg = document.getElementById("mapSvg");
