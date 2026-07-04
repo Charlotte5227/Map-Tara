@@ -5,6 +5,12 @@ import { chromium } from "playwright";
 const BASE_URL = process.env.MAP_RENDER_BASE_URL || "http://127.0.0.1:4173/index.html";
 const OUT_PATH = process.env.MAP_RENDER_OUT || "generated/map-latest.png";
 const WAIT_TIMEOUT_MS = Number(process.env.MAP_RENDER_WAIT_MS || 60000);
+const EXPORT_MODE = String(process.env.MAP_RENDER_EXPORT_MODE || "full").trim().toLowerCase();
+
+const VALID_EXPORT_MODES = new Set(["full", "base", "labels-country", "labels-number", "labels-both"]);
+if (!VALID_EXPORT_MODES.has(EXPORT_MODE)) {
+  throw new Error(`Unsupported MAP_RENDER_EXPORT_MODE: ${EXPORT_MODE}`);
+}
 
 function normalizeMode(value, fallback = "keep") {
   const normalized = String(value || "").trim().toLowerCase();
@@ -43,6 +49,33 @@ const RENDER_OPTIONS = {
     }
   }
 };
+
+function applyModeToRenderOptions(mode) {
+  const options = JSON.parse(JSON.stringify(RENDER_OPTIONS));
+
+  // 事前生成アセットは背景なしで作る
+  for (const key of Object.keys(options.backgrounds)) {
+    options.backgrounds[key].mode = "hide";
+  }
+
+  if (mode === "base") {
+    options.labels = "hide";
+    options.numbers = "hide";
+  } else if (mode === "labels-country") {
+    options.labels = "show";
+    options.numbers = "hide";
+  } else if (mode === "labels-number") {
+    options.labels = "hide";
+    options.numbers = "show";
+  } else if (mode === "labels-both") {
+    options.labels = "show";
+    options.numbers = "show";
+  }
+
+  return options;
+}
+
+const EFFECTIVE_RENDER_OPTIONS = applyModeToRenderOptions(EXPORT_MODE);
 
 async function renderMapImage() {
   const browser = await chromium.launch({
@@ -119,7 +152,7 @@ async function renderMapImage() {
         active.push(type);
       }
       return active;
-    }, RENDER_OPTIONS);
+    }, EFFECTIVE_RENDER_OPTIONS);
 
     await page.waitForLoadState("networkidle", { timeout: WAIT_TIMEOUT_MS });
     await page.waitForFunction((types) => {
@@ -132,7 +165,7 @@ async function renderMapImage() {
       return true;
     }, activeBgTypes, { timeout: WAIT_TIMEOUT_MS });
 
-    const size = await page.evaluate(() => {
+    const size = await page.evaluate((mode) => {
       const svg = document.getElementById("mapSvg");
       if (!svg) throw new Error("mapSvg が見つかりません");
 
@@ -149,7 +182,8 @@ async function renderMapImage() {
       document.body.style.margin = "0";
       document.body.style.padding = "0";
       document.body.style.display = "block";
-      document.body.style.background = "#ffffff";
+      const isLabelOnly = mode === "labels-country" || mode === "labels-number" || mode === "labels-both";
+      document.body.style.background = isLabelOnly ? "transparent" : "#ffffff";
       document.body.style.overflow = "visible";
       document.body.style.width = `${width}px`;
       document.body.style.height = `${height}px`;
@@ -160,13 +194,20 @@ async function renderMapImage() {
       mapContainer.style.width = `${width}px`;
       mapContainer.style.height = `${height}px`;
       mapContainer.style.overflow = "hidden";
-      mapContainer.style.background = "#ffffff";
+      mapContainer.style.background = isLabelOnly ? "transparent" : "#ffffff";
 
       svg.style.width = `${width}px`;
       svg.style.height = `${height}px`;
 
+      if (isLabelOnly) {
+        svg.querySelectorAll(".prov").forEach((p) => {
+          p.style.fillOpacity = "0";
+          p.style.strokeOpacity = "0";
+        });
+      }
+
       return { width, height };
-    });
+    }, EXPORT_MODE);
 
     await page.setViewportSize({ width: size.width + 20, height: size.height + 20 });
 
@@ -176,7 +217,7 @@ async function renderMapImage() {
     const mapSvg = page.locator("#mapSvg");
     await mapSvg.screenshot({ path: OUT_PATH, type: "png" });
 
-    console.log(`Map image generated: ${OUT_PATH} (${size.width}x${size.height})`);
+    console.log(`Map image generated: ${OUT_PATH} (${size.width}x${size.height}) [mode=${EXPORT_MODE}]`);
   } finally {
     await browser.close();
   }
