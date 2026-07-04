@@ -1,11 +1,16 @@
 // viewer.js
 
+  const ASSET_BASE_URL = new URL("./", window.location.href);
+  function assetUrl(path) {
+    return new URL(path, ASSET_BASE_URL).toString();
+  }
+
   // === 背景地図の設定 ===
   const BG_MAPS = {
-    topo: { url: "topography.png", id: "bg-img-topo", layer: "bottom" }, 
-    climate: { url: "climate.png", id: "bg-img-climate", layer: "bottom" },
-    region: { url: "region.png", id: "bg-img-region", layer: "top" },
-    continent: { url: "continent.png", id: "bg-img-continent", layer: "top" }
+    topo: { url: assetUrl("topography.png"), id: "bg-img-topo", layer: "bottom" }, 
+    climate: { url: assetUrl("climate.png"), id: "bg-img-climate", layer: "bottom" },
+    region: { url: assetUrl("region.png"), id: "bg-img-region", layer: "top" },
+    continent: { url: assetUrl("continent.png"), id: "bg-img-continent", layer: "top" }
   };
   let activeBgMaps = { topo: false, climate: false, region: false, continent: false };
 
@@ -128,7 +133,7 @@
 
   // === 時間管理 (Time System) ===
   let timeConfig = null;
-  const TIME_CONFIG_URL = "time-config.json";
+  const TIME_CONFIG_URL = assetUrl("time-config.json");
 
   async function loadTimeConfig() {
     try {
@@ -378,7 +383,7 @@
       // 1. まず時間設定を最新にする
       if (!timeConfig) await loadTimeConfig();
 
-      const url = `map-data.json?t=${Date.now()}`;
+      const url = `${assetUrl("map-data.json")}?t=${Date.now()}`;
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error("Fetch failed");
 
@@ -714,7 +719,7 @@ async function initViewer() {
     
     // map.svgを読み込んでmapContainerに挿入する
     console.log("map.svg読み込み中...");
-    const res = await fetch("map.svg");
+    const res = await fetch(assetUrl("map.svg"));
     
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
