@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
   <div id="mapContainer"></div>
 
   <div id="uiContainer">
@@ -27,16 +26,15 @@
           <input id="stepLenHours" type="number" min="0" step="1" value="24" style="width: 50px;">時間
           <input id="stepLenMins" type="number" min="0" max="50" step="10" value="0" style="width: 50px;">分
         </div>
-        <button id="saveTimeBtn" style="background-color: #0ea5e9;">設定して時間を動かす</button>
-        <button id="loadTimeBtn" style="background-color: #64748b; font-size: 12px; padding: 8px 12px;">設定を取得</button>
+        <button id="saveTimeBtn" style="background-color: #0ea5e9;" type="button">設定して時間を動かす</button>
+        <button id="loadTimeBtn" style="background-color: #64748b; font-size: 12px; padding: 8px 12px;" type="button">設定を取得</button>
       </div>
       <div class="time-row" style="border-top: 1px dashed #cbd5e1; padding-top: 8px;">
         <span style="font-weight:bold; font-size:16px; color:#b45309;" id="currentDateDisplay">現在の日付: 未設定</span>
-
         <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
           <span style="font-size: 12px; color: #666;">⏪ 過去の地図を復元:</span>
           <input id="historyDateInput" type="date" />
-          <button id="loadHistoryBtn" style="background-color: #475569; padding: 8px 12px; font-size: 12px;">読み込む</button>
+          <button id="loadHistoryBtn" style="background-color: #475569; padding: 8px 12px; font-size: 12px;" type="button">読み込む</button>
         </div>
       </div>
     </div>
@@ -53,65 +51,58 @@
     <div class="ui-group">
       <input id="nameInput" placeholder="国名（例：ブラジル）" />
       <input type="color" id="colorInput" value="#ff4444" title="国の色" style="cursor: pointer; width: 40px; height: 40px; border: none; padding: 0;" />
-      <button id="createCountryBtn">新規作成</button>
-
+      <button id="createCountryBtn" type="button">新規作成</button>
       <span style="margin-left: 10px;">編集:</span>
       <select id="countrySelect">
         <option value="">（国を選択）</option>
       </select>
-      <button id="applyToCountryBtn">選択プロビを国に反映（追加/削除）</button>
+      <button id="applyToCountryBtn" type="button">選択プロビを国に反映（追加/削除）</button>
     </div>
 
     <div class="ui-group">
       <textarea id="labelText" placeholder="選択中のラベルテキスト（改行は Enter）"></textarea>
-
       <div style="display:flex; flex-direction:column; gap:8px;">
         <div style="display:flex; gap:8px; align-items:center;">
-          <button id="applyLabelTextBtn" class="tiny">ラベル文字を反映</button>
-          <button id="resetLabelPosBtn" class="tiny">ラベルを中央へ</button>
+          <button id="applyLabelTextBtn" class="tiny" type="button">ラベル文字を反映</button>
+          <button id="resetLabelPosBtn" class="tiny" type="button">ラベルを中央へ</button>
           <label style="font-size:13px; cursor:pointer;"><input type="checkbox" id="lockLabelCenter"> 中央に固定</label>
         </div>
-
         <div style="display:flex; gap:8px; align-items:center;">
           <label style="font-size:13px;">文字サイズ</label>
           <input type="range" id="labelSize" min="8" max="100" value="18" style="width: 100px;" />
           <span id="labelSizeVal" style="font-size:13px; width:20px;">18</span>
-          <button id="applySizeBtn" class="tiny">個別サイズ適用</button>
+          <button id="applySizeBtn" class="tiny" type="button">個別サイズ適用</button>
         </div>
       </div>
-
       <div style="margin-left: auto; display: flex; flex-direction: column; gap: 8px;">
-          <button id="addFreeLabelBtn">自由にラベルを追加</button>
-          <label style="font-size:14px; cursor:pointer;">
-            <input type="checkbox" id="toggleLabels" checked /> ラベルを表示
-          </label>
+        <button id="addFreeLabelBtn" type="button">自由にラベルを追加</button>
+        <label style="font-size:14px; cursor:pointer;">
+          <input type="checkbox" id="toggleLabels" checked /> ラベルを表示
+        </label>
       </div>
     </div>
 
     <div class="ui-group">
-      <button id="addProvinceNumbersBtn">1から順番にプロビ番号を割り振る</button>
-
+      <button id="addProvinceNumbersBtn" type="button">1から順番にプロビ番号を割り振る</button>
       <div style="display:flex; gap:8px; align-items:center; margin-left: 10px;">
         <label style="font-size:13px; font-weight:bold;">数字ラベルの一括サイズ:</label>
         <input type="range" id="provLabelSize" min="5" max="50" value="14" style="width: 100px;" />
         <span id="provLabelSizeVal" style="font-size:13px; width:20px;">14</span>
-        <button id="applyProvSizeBtn" class="tiny">一括適用</button>
+        <button id="applyProvSizeBtn" class="tiny" type="button">一括適用</button>
       </div>
     </div>
 
     <div class="ui-group">
-      <button id="exportBtn">データを書き出す</button>
+      <button id="exportBtn" type="button">データを書き出す</button>
       <input type="file" id="importFile" accept="application/json" style="max-width: 200px;" />
-      <button id="importBtn">読み込む</button>
-
+      <button id="importBtn" type="button">読み込む</button>
       <div style="margin-left: 10px; display:flex; gap:8px; align-items:center; border-left: 1px solid #ccc; padding-left: 10px;">
-        <button id="restoreAutoSaveBtn" style="background-color: #64748b; font-size: 12px; padding: 8px 12px;" title="前回の未保存データを復元します">🔄 自動保存から復元</button>
+        <button id="restoreAutoSaveBtn" style="background-color: #64748b; font-size: 12px; padding: 8px 12px;" title="前回の未保存データを復元します" type="button">🔄 自動保存から復元</button>
         <span id="autoSaveStatus" style="font-size:12px; font-weight:bold; color:#10b981; width: 140px;"></span>
       </div>
-
       <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
         <input id="ghToken" type="password" placeholder="GitHub token" style="width: 150px;">
-        <button id="publishBtn">GitHubへ公開 (履歴も保存)</button>
+        <button id="publishBtn" type="button">GitHubへ公開 (履歴も保存)</button>
         <span id="publishStatus" style="font-size:13px; font-weight:bold;"></span>
       </div>
     </div>
