@@ -120,6 +120,7 @@ jobs:
         env:
           MAP_RENDER_BASE_URL: http://127.0.0.1:4173/index.html
           MAP_RENDER_OUT: generated/map-latest.png
+          MAP_RENDER_EXPORT_MODE: full
           MAP_RENDER_LABELS: show
           MAP_RENDER_NUMBERS: hide
           MAP_RENDER_BG_TOPO: show
@@ -137,6 +138,7 @@ jobs:
         env:
           MAP_RENDER_BASE_URL: http://127.0.0.1:4173/index.html
           MAP_RENDER_OUT: generated/map-latest.png
+          MAP_RENDER_EXPORT_MODE: full
           MAP_RENDER_LABELS: ${{ inputs.labels }}
           MAP_RENDER_NUMBERS: ${{ inputs.numbers }}
           MAP_RENDER_BG_TOPO: ${{ inputs.topo_mode }}
@@ -149,20 +151,53 @@ jobs:
           MAP_RENDER_BG_CONTINENT_OPACITY: ${{ inputs.continent_opacity }}
         run: npm run render:image
 
+      - name: Render precomposed base image
+        env:
+          MAP_RENDER_BASE_URL: http://127.0.0.1:4173/index.html
+          MAP_RENDER_OUT: generated/map-base.png
+          MAP_RENDER_EXPORT_MODE: base
+        run: npm run render:image
+
+      - name: Render precomposed country-label image
+        env:
+          MAP_RENDER_BASE_URL: http://127.0.0.1:4173/index.html
+          MAP_RENDER_OUT: generated/map-labels-country.png
+          MAP_RENDER_EXPORT_MODE: labels-country
+        run: npm run render:image
+
+      - name: Render precomposed number-label image
+        env:
+          MAP_RENDER_BASE_URL: http://127.0.0.1:4173/index.html
+          MAP_RENDER_OUT: generated/map-labels-number.png
+          MAP_RENDER_EXPORT_MODE: labels-number
+        run: npm run render:image
+
+      - name: Render precomposed both-label image
+        env:
+          MAP_RENDER_BASE_URL: http://127.0.0.1:4173/index.html
+          MAP_RENDER_OUT: generated/map-labels-both.png
+          MAP_RENDER_EXPORT_MODE: labels-both
+        run: npm run render:image
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: map-latest
-          path: generated/map-latest.png
+          path: |
+            generated/map-latest.png
+            generated/map-base.png
+            generated/map-labels-country.png
+            generated/map-labels-number.png
+            generated/map-labels-both.png
 
       - name: Commit generated image
         run: |
-          if git diff --quiet -- generated/map-latest.png; then
+          if git diff --quiet -- generated/map-latest.png generated/map-base.png generated/map-labels-country.png generated/map-labels-number.png generated/map-labels-both.png; then
             echo "No image changes to commit"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add generated/map-latest.png
-          git commit -m "chore: refresh generated map image [skip ci]"
+          git add generated/map-latest.png generated/map-base.png generated/map-labels-country.png generated/map-labels-number.png generated/map-labels-both.png
+          git commit -m "chore: refresh generated map assets [skip ci]"
           git push
