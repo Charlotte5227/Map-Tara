@@ -421,12 +421,14 @@
         }
 
         if (item.type === "provNumber") {
-          addProvNumber(numbersLayer, item.text, item.x, item.y, 52);
+          const numSize = Number(item.fontSize) || 52;
+          addProvNumber(numbersLayer, item.text, item.x, item.y, numSize);
           numberCount++;
           continue;
         }
         if (item.type === "freeLabel") {
-          addLabel(labelsLayer, item.text, item.x, item.y, 72);
+          const freeLabelSize = Number(item.fontSize) || 72;
+          addLabel(labelsLayer, item.text, item.x, item.y, freeLabelSize);
           labelCount++;
           continue;
         }
@@ -445,7 +447,8 @@
           const center = computeBBoxCenter(svg, item.provinces);
           lx = center.cx; ly = center.cy;
         }
-        addLabel(labelsLayer, item.labelText || item.name, lx, ly, 72);
+        const countryLabelSize = Number(item.labelFontSize) || 72;
+        addLabel(labelsLayer, item.labelText || item.name, lx, ly, countryLabelSize);
         labelCount++;
       }
       console.log(`✅ テキスト要素生成完了: ラベル ${labelCount}個, 番号 ${numberCount}個`);
