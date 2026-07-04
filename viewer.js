@@ -368,7 +368,7 @@
     text.classList.add("prov-number");
     text.setAttribute("x", x);
     text.setAttribute("y", y);
-    text.setAttribute("style", `font-size:${fontSize}px; font-weight:bold; fill:#333; text-anchor:middle; dominant-baseline:middle; user-select:none;`);
+    text.setAttribute("style", `font-size:${fontSize}px; font-weight:800; fill:#fff; stroke:#000; stroke-width:6px; paint-order:stroke fill; text-anchor:middle; dominant-baseline:middle; user-select:none;`);
     text.textContent = textValue;
     layer.appendChild(text);
   }
