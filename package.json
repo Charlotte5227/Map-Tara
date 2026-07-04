@@ -1,0 +1,11 @@
+{
+  "name": "tara-map-renderer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render:image": "node scripts/render-map-image.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.0"
+  }
+}
