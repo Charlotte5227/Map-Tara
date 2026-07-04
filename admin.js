@@ -386,11 +386,32 @@
   // --- GitHub API 通信系 ---
   const GH_OWNER = "Charlotte5227"; const GH_REPO  = "Map-Tara"; const GH_PATH  = "map-data.json";
   function toBase64Utf8(str) { return btoa(unescape(encodeURIComponent(str))); }
+  function fromBase64Utf8(base64) {
+    const binary = atob(base64.replace(/\s/g, ""));
+    const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0));
+    return new TextDecoder("utf-8").decode(bytes);
+  }
   async function getFileSha(owner, repo, path, token) {
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, "X-GitHub-Api-Version": "2022-11-28", Accept: "application/vnd.github+json" }, cache: "no-store" });
     if (res.status === 404) return null; if (!res.ok) throw new Error("取得失敗:" + path);
     return (await res.json()).sha;
+  }
+  async function fetchContentsJson(owner, repo, path, token) {
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, "X-GitHub-Api-Version": "2022-11-28", Accept: "application/vnd.github+json" }, cache: "no-store" });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`取得失敗:${path}`);
+    const payload = await res.json();
+    if (!payload || typeof payload.content !== "string") return null;
+    return JSON.parse(fromBase64Utf8(payload.content));
+  }
+  async function fetchContentsRawText(owner, repo, path, token) {
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3.raw" }, cache: "no-store" });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`取得失敗:${path}`);
+    return await res.text();
   }
   async function putFile(owner, repo, path, token, contentText, shaOrNull) {
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
@@ -441,17 +462,15 @@
     
     try {
       const histPath = `history/map-data-${targetDate}.json`;
-      const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${histPath}`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3.raw" }, cache: "no-store" });
-      
-      if (res.status === 404) {
+      const rawText = await fetchContentsRawText(GH_OWNER, GH_REPO, histPath, token);
+
+      if (rawText === null) {
         alert(`${targetDate} の地図データは保存されていません。`);
         btn.textContent = "読み込む";
         return;
       }
-      if (!res.ok) throw new Error("APIアクセスエラー");
 
-      const data = await res.json();
+      const data = JSON.parse(rawText);
       importData(data);
       alert(`${targetDate} の地図を復元しました！`);
     } catch(e) {
@@ -496,12 +515,10 @@
     if (!token) { alert("GitHub token を入力してください。"); return; }
     
     try {
-      const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${TIME_FILE_PATH}`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3.raw" }, cache: "no-store" });
-      if (res.status === 404) { alert("時間設定がまだ保存されていません。"); return; }
-      if (!res.ok) throw new Error();
+      const loadedConfig = await fetchContentsJson(GH_OWNER, GH_REPO, TIME_FILE_PATH, token);
+      if (!loadedConfig) { alert("時間設定がまだ保存されていません。"); return; }
 
-      timeConfig = await res.json();
+      timeConfig = loadedConfig;
       
       document.getElementById("calNameInput").value = timeConfig.calendarName;
       document.getElementById("startDateInput").value = timeConfig.baseGameDate;
