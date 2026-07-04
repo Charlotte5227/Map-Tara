@@ -13,9 +13,10 @@
     continent: { url: assetUrl("continent.png"), id: "bg-img-continent", layer: "top" }
   };
   const PREGENERATED_MAP_ASSETS = {
-    base: assetUrl("generated/Base.png"),
-    labelsCountry: assetUrl("generated/Country_Name.png"),
-    labelsNumber: assetUrl("generated/Num.png")
+    base: assetUrl("generated/map-base.png"),
+    labelsCountry: assetUrl("generated/map-labels-country.png"),
+    labelsNumber: assetUrl("generated/map-labels-number.png"),
+    labelsBoth: assetUrl("generated/map-labels-both.png")
   };
   let activeBgMaps = { topo: false, climate: false, region: false, continent: false };
   let bgOpacityState = { topo: 0.5, climate: 0.5, region: 0.5, continent: 0.5 };
