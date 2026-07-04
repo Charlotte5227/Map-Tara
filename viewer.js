@@ -12,6 +12,12 @@
     region: { url: assetUrl("region.png"), id: "bg-img-region", layer: "top" },
     continent: { url: assetUrl("continent.png"), id: "bg-img-continent", layer: "top" }
   };
+  const PREGENERATED_MAP_ASSETS = {
+    base: assetUrl("generated/map-base.png"),
+    labelsCountry: assetUrl("generated/map-labels-country.png"),
+    labelsNumber: assetUrl("generated/map-labels-number.png"),
+    labelsBoth: assetUrl("generated/map-labels-both.png")
+  };
   let activeBgMaps = { topo: false, climate: false, region: false, continent: false };
 
   function ensureBgLayer(svg, type) {
@@ -467,59 +473,164 @@
     }
   }
 
-// 画像保存: 現在表示を優先して保存し、失敗時のみ生成済み画像へフォールバック
+function getLabelPresetKey() {
+  if (labelsVisible && numbersVisible) return "labelsBoth";
+  if (labelsVisible) return "labelsCountry";
+  if (numbersVisible) return "labelsNumber";
+  return "none";
+}
+
+function getMapSizeFromSvg(svg) {
+  let width = 5000;
+  let height = 2500;
+  const vb = (svg.getAttribute("viewBox") || "").trim().split(/\s+/).map(Number);
+  if (vb.length === 4 && Number.isFinite(vb[2]) && Number.isFinite(vb[3])) {
+    width = Math.max(1, Math.round(vb[2]));
+    height = Math.max(1, Math.round(vb[3]));
+  }
+  return { width, height };
+}
+
+function getBgOpacity(type) {
+  const slider = document.getElementById(`op-${type}`);
+  if (!slider) return 1;
+  const value = Number(slider.value);
+  if (!Number.isFinite(value)) return 1;
+  return Math.max(0, Math.min(1, value));
+}
+
+async function loadImageForCanvas(url) {
+  const res = await fetch(`${url}?t=${Date.now()}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`画像読み込み失敗: ${url} (${res.status})`);
+  const blob = await res.blob();
+  if (blob.size === 0) throw new Error(`画像が空です: ${url}`);
+
+  if (typeof createImageBitmap === "function") {
+    return createImageBitmap(blob);
+  }
+
+  const imgUrl = URL.createObjectURL(blob);
+  try {
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("画像読み込みタイムアウト")), 30000);
+      img.onload = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+      img.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error("画像読み込みエラー"));
+      };
+      img.src = imgUrl;
+    });
+    return img;
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(imgUrl), 2000);
+  }
+}
+
+function closeCanvasSource(source) {
+  if (source && typeof source.close === "function") {
+    source.close();
+  }
+}
+
+async function drawLayer(ctx, url, width, height, opacity = 1) {
+  const source = await loadImageForCanvas(url);
+  try {
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(source, 0, 0, width, height);
+    ctx.restore();
+  } finally {
+    closeCanvasSource(source);
+  }
+}
+
+async function downloadMapImageFromPreRendered() {
+  const svg = document.getElementById("mapSvg");
+  if (!svg) throw new Error("地図が見つかりません");
+
+  const { width, height } = getMapSizeFromSvg(svg);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d", { alpha: false });
+  if (!ctx) throw new Error("Canvasコンテキスト取得失敗");
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  // 表示順を維持: 下背景 -> 本体 -> 上背景 -> ラベル
+  for (const type of ["topo", "climate"]) {
+    if (!activeBgMaps[type]) continue;
+    await drawLayer(ctx, BG_MAPS[type].url, width, height, getBgOpacity(type));
+  }
+
+  await drawLayer(ctx, PREGENERATED_MAP_ASSETS.base, width, height, 1);
+
+  for (const type of ["region", "continent"]) {
+    if (!activeBgMaps[type]) continue;
+    await drawLayer(ctx, BG_MAPS[type].url, width, height, getBgOpacity(type));
+  }
+
+  const labelPreset = getLabelPresetKey();
+  if (labelPreset !== "none") {
+    const labelUrl = PREGENERATED_MAP_ASSETS[labelPreset];
+    if (!labelUrl) throw new Error(`ラベル画像が未定義です: ${labelPreset}`);
+    await drawLayer(ctx, labelUrl, width, height, 1);
+  }
+
+  const pngBlob = await new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("PNG生成失敗"));
+        return;
+      }
+      resolve(blob);
+    }, "image/png");
+  });
+
+  const link = document.createElement("a");
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
+  const pngBlobUrl = URL.createObjectURL(pngBlob);
+  link.href = pngBlobUrl;
+  link.download = `map-composited-${timestamp}.png`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(pngBlobUrl), 2000);
+}
+
+// 画像保存: 事前生成PNGを合成して保存し、失敗時のみ従来方式へフォールバック
 async function downloadMapImage() {
     const statusIndicator = document.getElementById("statusIndicator");
-    const generatedUrl = `${assetUrl("generated/map-latest.png")}?t=${Date.now()}`;
 
-    statusIndicator.textContent = "現在の表示を保存中...";
+    statusIndicator.textContent = "事前生成画像を合成中...";
 
-    // 1) まずは現在画面の状態をそのまま保存する（背景ON/OFF・透明度・ラベル表示を反映）
+    // 1) 軽量な事前生成画像合成で保存
+    try {
+      await downloadMapImageFromPreRendered();
+      statusIndicator.textContent = "最終更新: " + new Date().toLocaleTimeString();
+      console.log("事前生成PNGの合成画像を保存しました");
+      return;
+    } catch (e) {
+      console.warn("事前生成PNG合成に失敗。従来方式へフォールバックします:", e);
+    }
+
+    statusIndicator.textContent = "従来方式で保存中...";
+
+    // 2) 失敗時のみ、重い従来方式にフォールバック
     try {
       await downloadMapImageLegacy();
-      statusIndicator.textContent = "最終更新: " + new Date().toLocaleTimeString();
-      console.log("現在表示の画像を保存しました");
-      return;
-    } catch (e) {
-      console.warn("現在表示の保存に失敗。生成済み画像へフォールバックします:", e);
-    }
-
-    statusIndicator.textContent = "画像を確認中...";
-
-    // 2) 現在表示の保存に失敗した場合のみ、生成済み画像を保存
-    try {
-      const res = await fetch(generatedUrl, { cache: "no-store" });
-      if (!res.ok) throw new Error(`生成済み画像が未作成です (${res.status})`);
-
-      const imageBuffer = await res.arrayBuffer();
-      const signature = new Uint8Array(imageBuffer.slice(0, 8));
-      const pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
-      const isPng = pngSignature.every((v, i) => signature[i] === v);
-      if (!isPng) {
-        throw new Error("生成済み画像がPNG形式ではありません");
-      }
-
-      const imageBlob = new Blob([imageBuffer], { type: "image/png" });
-      if (!imageBlob || imageBlob.size === 0) {
-        throw new Error("生成済み画像が空です");
-      }
-
-      const link = document.createElement("a");
-      const blobUrl = URL.createObjectURL(imageBlob);
-      link.href = blobUrl;
-      link.download = `map-latest-${new Date().toISOString().slice(0, 10)}.png`;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
 
       statusIndicator.textContent = "最終更新: " + new Date().toLocaleTimeString();
-      console.log("生成済み画像を保存しました（フォールバック）");
-      alert("現在表示の保存に失敗したため、生成済み画像を保存しました。");
+      alert("事前生成PNGでの合成保存に失敗したため、従来方式で保存しました。");
       return;
     } catch (e) {
-      console.warn("生成済み画像の取得に失敗:", e);
+      console.warn("従来方式の保存にも失敗:", e);
     }
 
-    alert("画像保存に失敗しました。しばらく待って再試行してください。\nGitHub Actions の Render Map Image が成功しているかも確認してください。");
+    alert("画像保存に失敗しました。しばらく待って再試行してください。\n画像生成ワークフローが成功しているかも確認してください。");
     statusIndicator.textContent = "データ同期中...";
 }
 
