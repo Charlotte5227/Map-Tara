@@ -233,8 +233,27 @@ async function renderMapImage() {
     const outDir = path.dirname(OUT_PATH);
     await mkdir(outDir, { recursive: true });
 
+    const isLabelOnly = EXPORT_MODE === "labels-country" || EXPORT_MODE === "labels-number" || EXPORT_MODE === "labels-both";
     const mapSvg = page.locator("#mapSvg");
-    await mapSvg.screenshot({ path: OUT_PATH, type: "png" });
+
+    if (isLabelOnly) {
+      const box = await mapSvg.boundingBox();
+      if (!box) throw new Error("mapSvg の描画領域取得に失敗しました");
+
+      await page.screenshot({
+        path: OUT_PATH,
+        type: "png",
+        omitBackground: true,
+        clip: {
+          x: box.x,
+          y: box.y,
+          width: box.width,
+          height: box.height
+        }
+      });
+    } else {
+      await mapSvg.screenshot({ path: OUT_PATH, type: "png" });
+    }
 
     console.log(`Map image generated: ${OUT_PATH} (${size.width}x${size.height}) [mode=${EXPORT_MODE}]`);
   } finally {
