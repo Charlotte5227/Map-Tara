@@ -14,7 +14,7 @@ svg.bg-bottom-active .prov { fill-opacity: 0.6; }
 body.labels-hidden .label { display: none !important; }
 .label.selected-label { fill: #ffeb3b !important; stroke: #d32f2f !important; stroke-width: 8px; }
 
-.prov-number { font-weight: bold; fill: #333; user-select: none; text-anchor: middle; dominant-baseline: middle; }
+.prov-number { font-weight: 800; fill: #fff; stroke: #000; stroke-width: 6px; paint-order: stroke fill; user-select: none; text-anchor: middle; dominant-baseline: middle; }
 body.numbers-hidden .prov-number { display: none !important; }
 #uiContainer { height: 40vh; min-height: 350px; background: #ffffff; border-top: 2px solid #ccc; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); padding: 15px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
 .ui-group { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; }
