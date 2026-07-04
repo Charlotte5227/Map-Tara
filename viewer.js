@@ -548,6 +548,28 @@ async function drawLayer(ctx, url, width, height, opacity = 1) {
   }
 }
 
+async function downloadGeneratedLatestImage() {
+  const generatedUrl = `${assetUrl("generated/map-latest.png")}?t=${Date.now()}`;
+  const res = await fetch(generatedUrl, { cache: "no-store" });
+  if (!res.ok) throw new Error(`生成済み画像が未作成です (${res.status})`);
+
+  const imageBuffer = await res.arrayBuffer();
+  const signature = new Uint8Array(imageBuffer.slice(0, 8));
+  const pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+  const isPng = pngSignature.every((v, i) => signature[i] === v);
+  if (!isPng) throw new Error("生成済み画像がPNG形式ではありません");
+
+  const imageBlob = new Blob([imageBuffer], { type: "image/png" });
+  if (!imageBlob || imageBlob.size === 0) throw new Error("生成済み画像が空です");
+
+  const link = document.createElement("a");
+  const blobUrl = URL.createObjectURL(imageBlob);
+  link.href = blobUrl;
+  link.download = `map-latest-${new Date().toISOString().slice(0, 10)}.png`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+}
+
 async function downloadMapImageFromPreRendered() {
   const svg = document.getElementById("mapSvg");
   if (!svg) throw new Error("地図が見つかりません");
@@ -617,9 +639,21 @@ async function downloadMapImage() {
       console.warn("事前生成PNG合成に失敗。従来方式へフォールバックします:", e);
     }
 
+    statusIndicator.textContent = "生成済み画像を確認中...";
+
+    // 2) 事前生成アセットが未配備の間は generated/map-latest.png を保存
+    try {
+      await downloadGeneratedLatestImage();
+      statusIndicator.textContent = "最終更新: " + new Date().toLocaleTimeString();
+      alert("事前生成アセットが未配備のため、生成済み画像を保存しました。\n表示状態（背景/ラベル）とは一致しない場合があります。");
+      return;
+    } catch (e) {
+      console.warn("生成済み画像の取得にも失敗。従来方式へフォールバックします:", e);
+    }
+
     statusIndicator.textContent = "従来方式で保存中...";
 
-    // 2) 失敗時のみ、重い従来方式にフォールバック
+    // 3) 失敗時のみ、重い従来方式にフォールバック
     try {
       await downloadMapImageLegacy();
 
