@@ -139,6 +139,24 @@
     }
   }
 
+  async function drawLayerWithFallbackUrls(ctx, urls, width, height, opacity, sourceViewBox) {
+    let lastError = null;
+    for (const url of urls) {
+      try {
+        await drawLayer(ctx, url, width, height, opacity, sourceViewBox);
+        return url;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw lastError || new Error("画像読み込みに失敗しました");
+  }
+
+  function isMissingPreRenderedAssetError(error) {
+    const msg = String((error && error.message) || "");
+    return msg.includes("generated/Base.png") || msg.includes("generated/map-base.png");
+  }
+
   function downloadBlob(blob, fileName) {
     const link = document.createElement("a");
     const blobUrl = URL.createObjectURL(blob);
@@ -244,7 +262,17 @@
       ctx.fillRect(0, 0, width, height);
 
       // Base(色付き地図) -> 背景画像群 -> ラベル群
-      await drawLayer(ctx, PREGENERATED_MAP_ASSETS.base, width, height, 1, sourceViewBox);
+      await drawLayerWithFallbackUrls(
+        ctx,
+        [
+          PREGENERATED_MAP_ASSETS.base,
+          assetUrl("generated/map-base.png")
+        ],
+        width,
+        height,
+        1,
+        sourceViewBox
+      );
 
       const activeBgMaps = getActiveBgMaps();
       for (const type of ["topo", "climate", "region", "continent"]) {
@@ -355,7 +383,11 @@
         console.log("事前生成PNGの合成画像を保存しました");
         return;
       } catch (e) {
-        console.warn("事前生成PNG合成に失敗。次のフォールバックへ:", e);
+        if (isMissingPreRenderedAssetError(e)) {
+          console.warn("事前生成アセット(Base)が未配備です。generated/map-latest.png へフォールバックします。");
+        } else {
+          console.warn("事前生成PNG合成に失敗。次のフォールバックへ:", e);
+        }
       }
 
       statusIndicator.textContent = "生成済み画像を確認中...";
