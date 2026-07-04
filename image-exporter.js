@@ -3,6 +3,9 @@
 (function (global) {
   "use strict";
 
+  const MAP_NATIVE_WIDTH = 5000;
+  const MAP_NATIVE_HEIGHT = 2500;
+
   function getLabelPresetKey(labelsVisible, numbersVisible) {
     if (labelsVisible && numbersVisible) return "both";
     if (labelsVisible) return "labelsCountry";
@@ -89,6 +92,25 @@
     }
   }
 
+  function getSourceCropRect(sourceViewBox, srcW, srcH) {
+    if (!sourceViewBox) return null;
+
+    const scaleX = srcW / MAP_NATIVE_WIDTH;
+    const scaleY = srcH / MAP_NATIVE_HEIGHT;
+
+    const sxRaw = sourceViewBox.x * scaleX;
+    const syRaw = sourceViewBox.y * scaleY;
+    const swRaw = sourceViewBox.w * scaleX;
+    const shRaw = sourceViewBox.h * scaleY;
+
+    const sx = Math.max(0, Math.min(sxRaw, srcW));
+    const sy = Math.max(0, Math.min(syRaw, srcH));
+    const sw = Math.max(1, Math.min(swRaw, srcW - sx));
+    const sh = Math.max(1, Math.min(shRaw, srcH - sy));
+
+    return { sx, sy, sw, sh };
+  }
+
   async function drawLayer(ctx, url, width, height, opacity, sourceViewBox) {
     const source = await loadImageForCanvas(url);
     try {
@@ -98,11 +120,15 @@
       if (sourceViewBox) {
         const srcW = getSourceWidth(source);
         const srcH = getSourceHeight(source);
-        const sx = Math.max(0, Math.min(sourceViewBox.x, srcW));
-        const sy = Math.max(0, Math.min(sourceViewBox.y, srcH));
-        const sw = Math.max(1, Math.min(sourceViewBox.w, srcW - sx));
-        const sh = Math.max(1, Math.min(sourceViewBox.h, srcH - sy));
-        ctx.drawImage(source, sx, sy, sw, sh, 0, 0, width, height);
+        if (srcW <= 0 || srcH <= 0) {
+          throw new Error(`画像サイズ取得失敗: ${url}`);
+        }
+        const crop = getSourceCropRect(sourceViewBox, srcW, srcH);
+        if (!crop) {
+          ctx.drawImage(source, 0, 0, width, height);
+        } else {
+          ctx.drawImage(source, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, width, height);
+        }
       } else {
         ctx.drawImage(source, 0, 0, width, height);
       }
@@ -120,6 +146,56 @@
     link.download = fileName;
     link.click();
     setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+  }
+
+  async function drawTextOnlyLayersFromSvg(ctx, svg, width, height, sourceViewBox, options) {
+    const { drawCountry, drawNumber } = options;
+    if (!drawCountry && !drawNumber) return;
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const tempSvg = document.createElementNS(svgNS, "svg");
+    tempSvg.setAttribute("xmlns", svgNS);
+    tempSvg.setAttribute("viewBox", `${sourceViewBox.x} ${sourceViewBox.y} ${sourceViewBox.w} ${sourceViewBox.h}`);
+    tempSvg.setAttribute("width", String(width));
+    tempSvg.setAttribute("height", String(height));
+
+    if (drawCountry) {
+      const labelsLayer = svg.querySelector("#labels-layer");
+      if (labelsLayer) tempSvg.appendChild(labelsLayer.cloneNode(true));
+    }
+    if (drawNumber) {
+      const numbersLayer = svg.querySelector("#numbers-layer");
+      if (numbersLayer) tempSvg.appendChild(numbersLayer.cloneNode(true));
+    }
+
+    if (!tempSvg.children.length) return;
+
+    const serialized = new XMLSerializer().serializeToString(tempSvg);
+    const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+
+    try {
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("テキストSVG読み込みタイムアウト")), 30000);
+        img.onload = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+        img.onerror = () => {
+          clearTimeout(timeout);
+          reject(new Error("テキストSVG読み込みエラー"));
+        };
+        img.src = objectUrl;
+      });
+
+      ctx.save();
+      ctx.globalAlpha = 1;
+      ctx.drawImage(img, 0, 0, width, height);
+      ctx.restore();
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
   }
 
   function createImageExporter(config) {
@@ -177,11 +253,23 @@
       }
 
       const labelPreset = getLabelPresetKey(getLabelsVisible(), getNumbersVisible());
-      if (labelPreset === "labelsCountry" || labelPreset === "both") {
-        await drawLayer(ctx, PREGENERATED_MAP_ASSETS.labelsCountry, width, height, 1, sourceViewBox);
-      }
-      if (labelPreset === "labelsNumber" || labelPreset === "both") {
-        await drawLayer(ctx, PREGENERATED_MAP_ASSETS.labelsNumber, width, height, 1, sourceViewBox);
+      const shouldDrawCountry = labelPreset === "labelsCountry" || labelPreset === "both";
+      const shouldDrawNumber = labelPreset === "labelsNumber" || labelPreset === "both";
+
+      // ラベルは保存時に現在のSVGレイヤーから直接描画し、文字だけを重ねる
+      try {
+        await drawTextOnlyLayersFromSvg(ctx, svg, width, height, sourceViewBox, {
+          drawCountry: shouldDrawCountry,
+          drawNumber: shouldDrawNumber
+        });
+      } catch (e) {
+        console.warn("テキストレイヤーの直接描画に失敗。事前生成ラベルPNGへフォールバックします:", e);
+        if (shouldDrawCountry) {
+          await drawLayer(ctx, PREGENERATED_MAP_ASSETS.labelsCountry, width, height, 1, sourceViewBox);
+        }
+        if (shouldDrawNumber) {
+          await drawLayer(ctx, PREGENERATED_MAP_ASSETS.labelsNumber, width, height, 1, sourceViewBox);
+        }
       }
 
       const pngBlob = await new Promise((resolve, reject) => {
