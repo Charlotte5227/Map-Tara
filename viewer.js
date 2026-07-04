@@ -478,16 +478,25 @@ async function downloadMapImage() {
       const res = await fetch(generatedUrl, { cache: "no-store" });
       if (!res.ok) throw new Error(`生成済み画像が未作成です (${res.status})`);
 
-      const imageBlob = await res.blob();
+      const imageBuffer = await res.arrayBuffer();
+      const signature = new Uint8Array(imageBuffer.slice(0, 8));
+      const pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+      const isPng = pngSignature.every((v, i) => signature[i] === v);
+      if (!isPng) {
+        throw new Error("生成済み画像がPNG形式ではありません");
+      }
+
+      const imageBlob = new Blob([imageBuffer], { type: "image/png" });
       if (!imageBlob || imageBlob.size === 0) {
         throw new Error("生成済み画像が空です");
       }
 
       const link = document.createElement("a");
-      link.href = URL.createObjectURL(imageBlob);
+      const blobUrl = URL.createObjectURL(imageBlob);
+      link.href = blobUrl;
       link.download = `map-latest-${new Date().toISOString().slice(0, 10)}.png`;
       link.click();
-      URL.revokeObjectURL(link.href);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
 
       statusIndicator.textContent = "最終更新: " + new Date().toLocaleTimeString();
       console.log("生成済み画像を保存しました");
@@ -570,9 +579,10 @@ async function downloadMapImageLegacy() {
       const link = document.createElement("a");
       const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
       link.download = `map-local-${timestamp}.png`;
-      link.href = URL.createObjectURL(pngBlob);
+      const pngBlobUrl = URL.createObjectURL(pngBlob);
+      link.href = pngBlobUrl;
       link.click();
-      URL.revokeObjectURL(link.href);
+      setTimeout(() => URL.revokeObjectURL(pngBlobUrl), 2000);
     } finally {
       URL.revokeObjectURL(svgUrl);
     }
