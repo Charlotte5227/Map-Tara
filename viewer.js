@@ -13,10 +13,9 @@
     continent: { url: assetUrl("continent.png"), id: "bg-img-continent", layer: "top" }
   };
   const PREGENERATED_MAP_ASSETS = {
-    base: assetUrl("generated/map-base.png"),
-    labelsCountry: assetUrl("generated/map-labels-country.png"),
-    labelsNumber: assetUrl("generated/map-labels-number.png"),
-    labelsBoth: assetUrl("generated/map-labels-both.png")
+    base: assetUrl("generated/Base.png"),
+    labelsCountry: assetUrl("generated/Country_Name.png"),
+    labelsNumber: assetUrl("generated/Num.png")
   };
   let activeBgMaps = { topo: false, climate: false, region: false, continent: false };
 
@@ -474,7 +473,7 @@
   }
 
 function getLabelPresetKey() {
-  if (labelsVisible && numbersVisible) return "labelsBoth";
+  if (labelsVisible && numbersVisible) return "both";
   if (labelsVisible) return "labelsCountry";
   if (numbersVisible) return "labelsNumber";
   return "none";
@@ -512,36 +511,6 @@ async function loadImageForCanvas(url) {
   if (!res.ok) throw new Error(`画像読み込み失敗: ${url} (${res.status})`);
   const blob = await res.blob();
   if (blob.size === 0) throw new Error(`画像が空です: ${url}`);
-
-  if (typeof createImageBitmap === "function") {
-    return createImageBitmap(blob);
-  }
-
-  const imgUrl = URL.createObjectURL(blob);
-  try {
-    const img = new Image();
-    await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("画像読み込みタイムアウト")), 30000);
-      img.onload = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-      img.onerror = () => {
-        clearTimeout(timeout);
-        reject(new Error("画像読み込みエラー"));
-      };
-      img.src = imgUrl;
-    });
-    return img;
-  } finally {
-    setTimeout(() => URL.revokeObjectURL(imgUrl), 2000);
-  }
-}
-
-async function loadCanvasSourceFromBlob(blob) {
-  if (!blob || blob.size === 0) {
-    throw new Error("画像ソースが空です");
-  }
 
   if (typeof createImageBitmap === "function") {
     return createImageBitmap(blob);
@@ -606,33 +575,6 @@ async function drawLayer(ctx, url, width, height, opacity = 1, sourceViewBox = n
   }
 }
 
-async function drawProvinceLayerFromCurrentSvg(ctx, svg, width, height) {
-  const sourceViewBox = getCurrentViewBox(svg);
-  const clonedSvg = svg.cloneNode(true);
-
-  clonedSvg.querySelectorAll("#labels-layer, #numbers-layer, #bg-layer-bottom, #bg-layer-top, #date-layer, image, text").forEach((el) => {
-    el.remove();
-  });
-
-  clonedSvg.setAttribute("viewBox", `${sourceViewBox.x} ${sourceViewBox.y} ${sourceViewBox.w} ${sourceViewBox.h}`);
-  clonedSvg.setAttribute("width", String(width));
-  clonedSvg.setAttribute("height", String(height));
-  clonedSvg.style.background = "transparent";
-
-  const svgString = new XMLSerializer().serializeToString(clonedSvg);
-  const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-  const source = await loadCanvasSourceFromBlob(svgBlob);
-
-  try {
-    ctx.save();
-    ctx.globalAlpha = 1;
-    ctx.drawImage(source, 0, 0, width, height);
-    ctx.restore();
-  } finally {
-    closeCanvasSource(source);
-  }
-}
-
 async function downloadGeneratedLatestImage() {
   const generatedUrl = `${assetUrl("generated/map-latest.png")}?t=${Date.now()}`;
   const res = await fetch(generatedUrl, { cache: "no-store" });
@@ -670,29 +612,20 @@ async function downloadMapImageFromPreRendered() {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
 
-  // 表示順を維持: 下背景 -> 本体 -> 上背景 -> ラベル
-  for (const type of ["topo", "climate"]) {
-    if (!activeBgMaps[type]) continue;
-    await drawLayer(ctx, BG_MAPS[type].url, width, height, getBgOpacity(type), sourceViewBox);
-  }
+  // 要件: Base(色付き地図) -> 背景画像群 -> ラベル群 の順で合成
+  await drawLayer(ctx, PREGENERATED_MAP_ASSETS.base, width, height, 1, sourceViewBox);
 
-  try {
-    await drawProvinceLayerFromCurrentSvg(ctx, svg, width, height);
-  } catch (e) {
-    console.warn("現在SVGからのプロビ描画に失敗。事前生成baseへフォールバックします:", e);
-    await drawLayer(ctx, PREGENERATED_MAP_ASSETS.base, width, height, 1, sourceViewBox);
-  }
-
-  for (const type of ["region", "continent"]) {
+  for (const type of ["topo", "climate", "region", "continent"]) {
     if (!activeBgMaps[type]) continue;
     await drawLayer(ctx, BG_MAPS[type].url, width, height, getBgOpacity(type), sourceViewBox);
   }
 
   const labelPreset = getLabelPresetKey();
-  if (labelPreset !== "none") {
-    const labelUrl = PREGENERATED_MAP_ASSETS[labelPreset];
-    if (!labelUrl) throw new Error(`ラベル画像が未定義です: ${labelPreset}`);
-    await drawLayer(ctx, labelUrl, width, height, 1, sourceViewBox);
+  if (labelPreset === "labelsCountry" || labelPreset === "both") {
+    await drawLayer(ctx, PREGENERATED_MAP_ASSETS.labelsCountry, width, height, 1, sourceViewBox);
+  }
+  if (labelPreset === "labelsNumber" || labelPreset === "both") {
+    await drawLayer(ctx, PREGENERATED_MAP_ASSETS.labelsNumber, width, height, 1, sourceViewBox);
   }
 
   const pngBlob = await new Promise((resolve, reject) => {
