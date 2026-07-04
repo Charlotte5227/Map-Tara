@@ -9,6 +9,7 @@ on:
     branches:
       - main
     paths:
+      - .github/workflows/render-map-image.yml
       - map-data.json
       - time-config.json
       - history/**
@@ -16,6 +17,8 @@ on:
       - viewer.js
       - image-exporter.js
       - index.html
+      - package.json
+      - scripts/render-map-image.mjs
       - style.css
   workflow_dispatch:
     inputs:
@@ -196,6 +199,14 @@ jobs:
           MAP_RENDER_OUT: generated/map-labels-both.png
           MAP_RENDER_EXPORT_MODE: labels-both
         run: npm run render:image
+
+      - name: Verify generated assets exist
+        run: |
+          test -f generated/map-latest.png
+          test -f generated/map-base.png
+          test -f generated/map-labels-country.png
+          test -f generated/map-labels-number.png
+          test -f generated/map-labels-both.png
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
