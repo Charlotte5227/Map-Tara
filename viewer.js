@@ -184,7 +184,8 @@
       updateDateDisplay(svg, dateStr);
     }
     // 1日の長さに応じて適度な間隔で更新確認を行う
-    const interval = timeConfig ? Math.max(timeConfig.dayLengthMs / 100, 1000) : 5000;
+    const stepMs = timeConfig ? (timeConfig.stepLengthMs || timeConfig.dayLengthMs || 3600000) : 0;
+    const interval = timeConfig ? Math.max(stepMs / 100, 1000) : 5000;
     setTimeout(startClock, interval);
   }
 
