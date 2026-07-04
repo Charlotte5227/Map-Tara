@@ -101,8 +101,7 @@ async function renderMapImage() {
       if (!svg) return false;
 
       const provinceCount = svg.querySelectorAll(".prov").length;
-      const hasAnyLabelLayer = !!svg.querySelector("#labels-layer, #numbers-layer");
-      const hasRenderedState = statusText.includes("最終更新") || hasAnyLabelLayer;
+      const hasRenderedState = statusText.includes("最終更新");
 
       return provinceCount > 0 && hasRenderedState;
     }, { timeout: WAIT_TIMEOUT_MS });
