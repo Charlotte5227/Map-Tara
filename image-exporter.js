@@ -154,7 +154,7 @@
 
   function isMissingPreRenderedAssetError(error) {
     const msg = String((error && error.message) || "");
-    return msg.includes("generated/Base.png") || msg.includes("generated/map-base.png");
+    return msg.includes("generated/map-base.png") || msg.includes("generated/Base.png");
   }
 
   function cloneBaseOnlySvg(svg) {
@@ -232,56 +232,6 @@
     setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
   }
 
-  async function drawTextOnlyLayersFromSvg(ctx, svg, width, height, sourceViewBox, options) {
-    const { drawCountry, drawNumber } = options;
-    if (!drawCountry && !drawNumber) return;
-
-    const svgNS = "http://www.w3.org/2000/svg";
-    const tempSvg = document.createElementNS(svgNS, "svg");
-    tempSvg.setAttribute("xmlns", svgNS);
-    tempSvg.setAttribute("viewBox", `${sourceViewBox.x} ${sourceViewBox.y} ${sourceViewBox.w} ${sourceViewBox.h}`);
-    tempSvg.setAttribute("width", String(width));
-    tempSvg.setAttribute("height", String(height));
-
-    if (drawCountry) {
-      const labelsLayer = svg.querySelector("#labels-layer");
-      if (labelsLayer) tempSvg.appendChild(labelsLayer.cloneNode(true));
-    }
-    if (drawNumber) {
-      const numbersLayer = svg.querySelector("#numbers-layer");
-      if (numbersLayer) tempSvg.appendChild(numbersLayer.cloneNode(true));
-    }
-
-    if (!tempSvg.children.length) return;
-
-    const serialized = new XMLSerializer().serializeToString(tempSvg);
-    const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
-    const objectUrl = URL.createObjectURL(blob);
-
-    try {
-      const img = new Image();
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error("テキストSVG読み込みタイムアウト")), 30000);
-        img.onload = () => {
-          clearTimeout(timeout);
-          resolve();
-        };
-        img.onerror = () => {
-          clearTimeout(timeout);
-          reject(new Error("テキストSVG読み込みエラー"));
-        };
-        img.src = objectUrl;
-      });
-
-      ctx.save();
-      ctx.globalAlpha = 1;
-      ctx.drawImage(img, 0, 0, width, height);
-      ctx.restore();
-    } finally {
-      URL.revokeObjectURL(objectUrl);
-    }
-  }
-
   function createImageExporter(config) {
     const {
       assetUrl,
@@ -327,13 +277,14 @@
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, width, height);
 
-      // Base(色付き地図) -> 背景画像群 -> ラベル群
+      // Base(色付き地図) -> 背景画像群 -> ラベルPNG群
       try {
         await drawLayerWithFallbackUrls(
           ctx,
           [
             PREGENERATED_MAP_ASSETS.base,
-            assetUrl("generated/map-base.png")
+            assetUrl("generated/map-base.png"),
+            assetUrl("generated/Base.png")
           ],
           width,
           height,
@@ -360,19 +311,47 @@
       const shouldDrawCountry = labelPreset === "labelsCountry" || labelPreset === "both";
       const shouldDrawNumber = labelPreset === "labelsNumber" || labelPreset === "both";
 
-      // ラベルは保存時に現在のSVGレイヤーから直接描画し、文字だけを重ねる
-      try {
-        await drawTextOnlyLayersFromSvg(ctx, svg, width, height, sourceViewBox, {
-          drawCountry: shouldDrawCountry,
-          drawNumber: shouldDrawNumber
-        });
-      } catch (e) {
-        console.warn("テキストレイヤーの直接描画に失敗。事前生成ラベルPNGへフォールバックします:", e);
+      // ラベルは常に事前生成PNGを合成する（巨大SVGの直接描画は行わない）
+      if (labelPreset === "both" && PREGENERATED_MAP_ASSETS.labelsBoth) {
+        await drawLayerWithFallbackUrls(
+          ctx,
+          [
+            PREGENERATED_MAP_ASSETS.labelsBoth,
+            assetUrl("generated/map-labels-both.png")
+          ],
+          width,
+          height,
+          1,
+          sourceViewBox
+        );
+      } else {
         if (shouldDrawCountry) {
-          await drawLayer(ctx, PREGENERATED_MAP_ASSETS.labelsCountry, width, height, 1, sourceViewBox);
+          await drawLayerWithFallbackUrls(
+            ctx,
+            [
+              PREGENERATED_MAP_ASSETS.labelsCountry,
+              assetUrl("generated/map-labels-country.png"),
+              assetUrl("generated/Country_Name.png")
+            ],
+            width,
+            height,
+            1,
+            sourceViewBox
+          );
         }
         if (shouldDrawNumber) {
-          await drawLayer(ctx, PREGENERATED_MAP_ASSETS.labelsNumber, width, height, 1, sourceViewBox);
+          await drawLayerWithFallbackUrls(
+            ctx,
+            [
+              PREGENERATED_MAP_ASSETS.labelsNumber,
+              assetUrl("generated/map-labels-number.png"),
+              assetUrl("generated/Num.png")
+            ],
+            width,
+            height,
+            1,
+            sourceViewBox
+          );
         }
       }
 
