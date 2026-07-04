@@ -1,5 +1,10 @@
 // admin.js
 
+  const ASSET_BASE_URL = new URL("./", window.location.href);
+  function assetUrl(path) {
+    return new URL(path, ASSET_BASE_URL).toString();
+  }
+
   // === 基本設定・状態 ===
   const SELECT_CLASS = "selected";
   const DEFAULT_LABEL_SIZE = 18;
@@ -719,7 +724,7 @@ function attachAdminEvents() {
 
 async function loadInitialMapData() {
   try {
-    const res = await fetch(`map-data.json?t=${Date.now()}`, { cache: "no-store" });
+    const res = await fetch(`${assetUrl("map-data.json")}?t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) {
       throw new Error("map-data.json の取得に失敗");
     }
@@ -739,7 +744,7 @@ async function loadInitialMapData() {
 async function initAdmin() {
   try {
     // SVGを読み込んで挿入
-    const res = await fetch("map.svg");
+    const res = await fetch(assetUrl("map.svg"));
     const svgText = await res.text();
     document.getElementById("mapContainer").innerHTML = svgText;
 
