@@ -139,6 +139,82 @@
     }
   }
 
+  function hasOpaqueWhiteCorners(source) {
+    const w = getSourceWidth(source);
+    const h = getSourceHeight(source);
+    if (w <= 0 || h <= 0) return false;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return false;
+
+    ctx.drawImage(source, 0, 0, w, h);
+    const points = [
+      [0, 0],
+      [w - 1, 0],
+      [0, h - 1],
+      [w - 1, h - 1]
+    ];
+
+    let whiteOpaqueCount = 0;
+    for (const [x, y] of points) {
+      const pixel = ctx.getImageData(x, y, 1, 1).data;
+      const isOpaque = pixel[3] >= 250;
+      const isNearWhite = pixel[0] >= 245 && pixel[1] >= 245 && pixel[2] >= 245;
+      if (isOpaque && isNearWhite) whiteOpaqueCount += 1;
+    }
+
+    return whiteOpaqueCount >= 3;
+  }
+
+  async function drawLabelLayerWithFallbackUrls(ctx, urls, width, height, opacity, sourceViewBox) {
+    let lastError = null;
+
+    for (const url of urls) {
+      const source = await loadImageForCanvas(url).catch((e) => {
+        lastError = e;
+        return null;
+      });
+      if (!source) continue;
+
+      try {
+        if (hasOpaqueWhiteCorners(source)) {
+          throw new Error(`ラベル画像の背景が不透明です: ${url}`);
+        }
+
+        ctx.save();
+        ctx.globalAlpha = opacity;
+
+        if (sourceViewBox) {
+          const srcW = getSourceWidth(source);
+          const srcH = getSourceHeight(source);
+          if (srcW <= 0 || srcH <= 0) {
+            throw new Error(`画像サイズ取得失敗: ${url}`);
+          }
+          const crop = getSourceCropRect(sourceViewBox, srcW, srcH);
+          if (!crop) {
+            ctx.drawImage(source, 0, 0, width, height);
+          } else {
+            ctx.drawImage(source, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, width, height);
+          }
+        } else {
+          ctx.drawImage(source, 0, 0, width, height);
+        }
+
+        ctx.restore();
+        return url;
+      } catch (e) {
+        lastError = e;
+      } finally {
+        closeCanvasSource(source);
+      }
+    }
+
+    throw lastError || new Error("ラベル画像の読み込みに失敗しました");
+  }
+
   async function drawLayerWithFallbackUrls(ctx, urls, width, height, opacity, sourceViewBox) {
     let lastError = null;
     for (const url of urls) {
@@ -232,6 +308,56 @@
     setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
   }
 
+  async function drawTextOnlyLayersFromSvg(ctx, svg, width, height, sourceViewBox, options) {
+    const { drawCountry, drawNumber } = options;
+    if (!drawCountry && !drawNumber) return;
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const tempSvg = document.createElementNS(svgNS, "svg");
+    tempSvg.setAttribute("xmlns", svgNS);
+    tempSvg.setAttribute("viewBox", `${sourceViewBox.x} ${sourceViewBox.y} ${sourceViewBox.w} ${sourceViewBox.h}`);
+    tempSvg.setAttribute("width", String(width));
+    tempSvg.setAttribute("height", String(height));
+
+    if (drawCountry) {
+      const labelsLayer = svg.querySelector("#labels-layer");
+      if (labelsLayer) tempSvg.appendChild(labelsLayer.cloneNode(true));
+    }
+    if (drawNumber) {
+      const numbersLayer = svg.querySelector("#numbers-layer");
+      if (numbersLayer) tempSvg.appendChild(numbersLayer.cloneNode(true));
+    }
+
+    if (!tempSvg.children.length) return;
+
+    const serialized = new XMLSerializer().serializeToString(tempSvg);
+    const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+
+    try {
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("テキストSVG読み込みタイムアウト")), 30000);
+        img.onload = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+        img.onerror = () => {
+          clearTimeout(timeout);
+          reject(new Error("テキストSVG読み込みエラー"));
+        };
+        img.src = objectUrl;
+      });
+
+      ctx.save();
+      ctx.globalAlpha = 1;
+      ctx.drawImage(img, 0, 0, width, height);
+      ctx.restore();
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
   function createImageExporter(config) {
     const {
       assetUrl,
@@ -311,48 +437,58 @@
       const shouldDrawCountry = labelPreset === "labelsCountry" || labelPreset === "both";
       const shouldDrawNumber = labelPreset === "labelsNumber" || labelPreset === "both";
 
-      // ラベルは常に事前生成PNGを合成する（巨大SVGの直接描画は行わない）
-      if (labelPreset === "both" && PREGENERATED_MAP_ASSETS.labelsBoth) {
-        await drawLayerWithFallbackUrls(
-          ctx,
-          [
-            PREGENERATED_MAP_ASSETS.labelsBoth,
-            assetUrl("generated/map-labels-both.png")
-          ],
-          width,
-          height,
-          1,
-          sourceViewBox
-        );
-      } else {
-        if (shouldDrawCountry) {
-          await drawLayerWithFallbackUrls(
+      // ラベルは事前生成PNGを優先し、背景不正や欠落時はラベル層だけの軽量SVG描画で代替する
+      try {
+        if (labelPreset === "both" && PREGENERATED_MAP_ASSETS.labelsBoth) {
+          await drawLabelLayerWithFallbackUrls(
             ctx,
             [
-              PREGENERATED_MAP_ASSETS.labelsCountry,
-              assetUrl("generated/map-labels-country.png"),
-              assetUrl("generated/Country_Name.png")
+              PREGENERATED_MAP_ASSETS.labelsBoth,
+              assetUrl("generated/map-labels-both.png")
             ],
             width,
             height,
             1,
             sourceViewBox
           );
+        } else {
+          if (shouldDrawCountry) {
+            await drawLabelLayerWithFallbackUrls(
+              ctx,
+              [
+                PREGENERATED_MAP_ASSETS.labelsCountry,
+                assetUrl("generated/map-labels-country.png"),
+                assetUrl("generated/Country_Name.png")
+              ],
+              width,
+              height,
+              1,
+              sourceViewBox
+            );
+          }
+          if (shouldDrawNumber) {
+            await drawLabelLayerWithFallbackUrls(
+              ctx,
+              [
+                PREGENERATED_MAP_ASSETS.labelsNumber,
+                assetUrl("generated/map-labels-number.png"),
+                assetUrl("generated/Num.png")
+              ],
+              width,
+              height,
+              1,
+              sourceViewBox
+            );
+          }
         }
-        if (shouldDrawNumber) {
-          await drawLayerWithFallbackUrls(
-            ctx,
-            [
-              PREGENERATED_MAP_ASSETS.labelsNumber,
-              assetUrl("generated/map-labels-number.png"),
-              assetUrl("generated/Num.png")
-            ],
-            width,
-            height,
-            1,
-            sourceViewBox
-          );
-        }
+      } catch (e) {
+        console.warn("ラベルPNG合成に失敗。ラベル層SVGで代替します:", e);
+        const svgForLabelFallback = getSvg();
+        if (!svgForLabelFallback) throw e;
+        await drawTextOnlyLayersFromSvg(ctx, svgForLabelFallback, width, height, sourceViewBox, {
+          drawCountry: shouldDrawCountry,
+          drawNumber: shouldDrawNumber
+        });
       }
 
       const pngBlob = await new Promise((resolve, reject) => {
