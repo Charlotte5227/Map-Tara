@@ -467,13 +467,26 @@
     }
   }
 
-// 画像保存: 生成済み画像を優先してダウンロード（ローカル時のみ旧方式へフォールバック）
+// 画像保存: 現在表示を優先して保存し、失敗時のみ生成済み画像へフォールバック
 async function downloadMapImage() {
     const statusIndicator = document.getElementById("statusIndicator");
     const generatedUrl = `${assetUrl("generated/map-latest.png")}?t=${Date.now()}`;
 
+    statusIndicator.textContent = "現在の表示を保存中...";
+
+    // 1) まずは現在画面の状態をそのまま保存する（背景ON/OFF・透明度・ラベル表示を反映）
+    try {
+      await downloadMapImageLegacy();
+      statusIndicator.textContent = "最終更新: " + new Date().toLocaleTimeString();
+      console.log("現在表示の画像を保存しました");
+      return;
+    } catch (e) {
+      console.warn("現在表示の保存に失敗。生成済み画像へフォールバックします:", e);
+    }
+
     statusIndicator.textContent = "画像を確認中...";
 
+    // 2) 現在表示の保存に失敗した場合のみ、生成済み画像を保存
     try {
       const res = await fetch(generatedUrl, { cache: "no-store" });
       if (!res.ok) throw new Error(`生成済み画像が未作成です (${res.status})`);
@@ -499,29 +512,15 @@ async function downloadMapImage() {
       setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
 
       statusIndicator.textContent = "最終更新: " + new Date().toLocaleTimeString();
-      console.log("生成済み画像を保存しました");
+      console.log("生成済み画像を保存しました（フォールバック）");
+      alert("現在表示の保存に失敗したため、生成済み画像を保存しました。");
       return;
     } catch (e) {
       console.warn("生成済み画像の取得に失敗:", e);
     }
 
-    // ローカル開発中のみ旧方式での簡易保存を許可
-    const isLocal = location.hostname === "127.0.0.1" || location.hostname === "localhost";
-    if (!isLocal) {
-      alert("生成済み画像が見つかりません。GitHub Actions の Render Map Image を実行後に再試行してください。");
-      statusIndicator.textContent = "データ同期中...";
-      return;
-    }
-
-    try {
-      statusIndicator.textContent = "画像を処理中... (ローカル簡易保存)";
-      await downloadMapImageLegacy();
-      statusIndicator.textContent = "最終更新: " + new Date().toLocaleTimeString();
-    } catch (e) {
-      console.error("ローカル簡易保存エラー:", e);
-      alert("画像保存に失敗しました: " + e.message);
-      statusIndicator.textContent = "データ同期中...";
-    }
+    alert("画像保存に失敗しました。しばらく待って再試行してください。\nGitHub Actions の Render Map Image が成功しているかも確認してください。");
+    statusIndicator.textContent = "データ同期中...";
 }
 
 async function downloadMapImageLegacy() {
