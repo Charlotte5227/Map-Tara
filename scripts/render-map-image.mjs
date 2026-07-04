@@ -199,9 +199,29 @@ async function renderMapImage() {
       svg.style.height = `${height}px`;
 
       if (isLabelOnly) {
+        // ラベル専用モードでは、座標済みのラベル層以外を明示的に隠して透過PNGを作る
         svg.querySelectorAll(".prov").forEach((p) => {
-          p.style.fillOpacity = "0";
-          p.style.strokeOpacity = "0";
+          p.style.display = "none";
+          p.style.fill = "transparent";
+          p.style.stroke = "transparent";
+          p.style.opacity = "0";
+        });
+
+        const topBg = svg.querySelector("#bg-layer-top");
+        if (topBg) topBg.style.display = "none";
+        const bottomBg = svg.querySelector("#bg-layer-bottom");
+        if (bottomBg) bottomBg.style.display = "none";
+        const dateLayer = svg.querySelector("#date-layer");
+        if (dateLayer) dateLayer.style.display = "none";
+
+        svg.querySelectorAll("path,polygon,polyline,rect,circle,ellipse,line,image,use").forEach((el) => {
+          if (el.closest("#labels-layer, #numbers-layer")) return;
+          el.style.display = "none";
+        });
+
+        svg.querySelectorAll("text").forEach((textEl) => {
+          if (textEl.closest("#labels-layer, #numbers-layer")) return;
+          textEl.style.display = "none";
         });
       }
 
