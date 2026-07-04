@@ -491,6 +491,14 @@ function getMapSizeFromSvg(svg) {
   return { width, height };
 }
 
+function getCurrentViewBox(svg) {
+  const vb = (svg.getAttribute("viewBox") || "").trim().split(/\s+/).map(Number);
+  if (vb.length === 4 && vb.every(Number.isFinite)) {
+    return { x: vb[0], y: vb[1], w: vb[2], h: vb[3] };
+  }
+  return { x: 0, y: 0, w: 5000, h: 2500 };
+}
+
 function getBgOpacity(type) {
   const slider = document.getElementById(`op-${type}`);
   if (!slider) return 1;
@@ -530,17 +538,94 @@ async function loadImageForCanvas(url) {
   }
 }
 
+async function loadCanvasSourceFromBlob(blob) {
+  if (!blob || blob.size === 0) {
+    throw new Error("画像ソースが空です");
+  }
+
+  if (typeof createImageBitmap === "function") {
+    return createImageBitmap(blob);
+  }
+
+  const imgUrl = URL.createObjectURL(blob);
+  try {
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("画像読み込みタイムアウト")), 30000);
+      img.onload = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+      img.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error("画像読み込みエラー"));
+      };
+      img.src = imgUrl;
+    });
+    return img;
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(imgUrl), 2000);
+  }
+}
+
 function closeCanvasSource(source) {
   if (source && typeof source.close === "function") {
     source.close();
   }
 }
 
-async function drawLayer(ctx, url, width, height, opacity = 1) {
+function getSourceWidth(source) {
+  return Number(source?.width) || Number(source?.naturalWidth) || 0;
+}
+
+function getSourceHeight(source) {
+  return Number(source?.height) || Number(source?.naturalHeight) || 0;
+}
+
+async function drawLayer(ctx, url, width, height, opacity = 1, sourceViewBox = null) {
   const source = await loadImageForCanvas(url);
   try {
     ctx.save();
     ctx.globalAlpha = opacity;
+
+    if (sourceViewBox) {
+      const srcW = getSourceWidth(source);
+      const srcH = getSourceHeight(source);
+      const sx = Math.max(0, Math.min(sourceViewBox.x, srcW));
+      const sy = Math.max(0, Math.min(sourceViewBox.y, srcH));
+      const sw = Math.max(1, Math.min(sourceViewBox.w, srcW - sx));
+      const sh = Math.max(1, Math.min(sourceViewBox.h, srcH - sy));
+      ctx.drawImage(source, sx, sy, sw, sh, 0, 0, width, height);
+    } else {
+      ctx.drawImage(source, 0, 0, width, height);
+    }
+
+    ctx.restore();
+  } finally {
+    closeCanvasSource(source);
+  }
+}
+
+async function drawProvinceLayerFromCurrentSvg(ctx, svg, width, height) {
+  const sourceViewBox = getCurrentViewBox(svg);
+  const clonedSvg = svg.cloneNode(true);
+
+  clonedSvg.querySelectorAll("#labels-layer, #numbers-layer, #bg-layer-bottom, #bg-layer-top, #date-layer, image, text").forEach((el) => {
+    el.remove();
+  });
+
+  clonedSvg.setAttribute("viewBox", `${sourceViewBox.x} ${sourceViewBox.y} ${sourceViewBox.w} ${sourceViewBox.h}`);
+  clonedSvg.setAttribute("width", String(width));
+  clonedSvg.setAttribute("height", String(height));
+  clonedSvg.style.background = "transparent";
+
+  const svgString = new XMLSerializer().serializeToString(clonedSvg);
+  const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+  const source = await loadCanvasSourceFromBlob(svgBlob);
+
+  try {
+    ctx.save();
+    ctx.globalAlpha = 1;
     ctx.drawImage(source, 0, 0, width, height);
     ctx.restore();
   } finally {
@@ -575,6 +660,7 @@ async function downloadMapImageFromPreRendered() {
   if (!svg) throw new Error("地図が見つかりません");
 
   const { width, height } = getMapSizeFromSvg(svg);
+  const sourceViewBox = getCurrentViewBox(svg);
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -587,21 +673,26 @@ async function downloadMapImageFromPreRendered() {
   // 表示順を維持: 下背景 -> 本体 -> 上背景 -> ラベル
   for (const type of ["topo", "climate"]) {
     if (!activeBgMaps[type]) continue;
-    await drawLayer(ctx, BG_MAPS[type].url, width, height, getBgOpacity(type));
+    await drawLayer(ctx, BG_MAPS[type].url, width, height, getBgOpacity(type), sourceViewBox);
   }
 
-  await drawLayer(ctx, PREGENERATED_MAP_ASSETS.base, width, height, 1);
+  try {
+    await drawProvinceLayerFromCurrentSvg(ctx, svg, width, height);
+  } catch (e) {
+    console.warn("現在SVGからのプロビ描画に失敗。事前生成baseへフォールバックします:", e);
+    await drawLayer(ctx, PREGENERATED_MAP_ASSETS.base, width, height, 1, sourceViewBox);
+  }
 
   for (const type of ["region", "continent"]) {
     if (!activeBgMaps[type]) continue;
-    await drawLayer(ctx, BG_MAPS[type].url, width, height, getBgOpacity(type));
+    await drawLayer(ctx, BG_MAPS[type].url, width, height, getBgOpacity(type), sourceViewBox);
   }
 
   const labelPreset = getLabelPresetKey();
   if (labelPreset !== "none") {
     const labelUrl = PREGENERATED_MAP_ASSETS[labelPreset];
     if (!labelUrl) throw new Error(`ラベル画像が未定義です: ${labelPreset}`);
-    await drawLayer(ctx, labelUrl, width, height, 1);
+    await drawLayer(ctx, labelUrl, width, height, 1, sourceViewBox);
   }
 
   const pngBlob = await new Promise((resolve, reject) => {
