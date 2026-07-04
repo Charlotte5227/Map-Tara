@@ -467,118 +467,114 @@
     }
   }
 
-// 画像保存: SVGをCanvasに描画してPNGで出力（Canvas API方式）
+// 画像保存: 生成済み画像を優先してダウンロード（ローカル時のみ旧方式へフォールバック）
 async function downloadMapImage() {
-    const svg = document.getElementById("mapSvg");
     const statusIndicator = document.getElementById("statusIndicator");
-    
-    if (!svg) {
-        alert("地図が見つかりません");
-        return;
+    const generatedUrl = `${assetUrl("generated/map-latest.png")}?t=${Date.now()}`;
+
+    statusIndicator.textContent = "画像を確認中...";
+
+    try {
+      const res = await fetch(generatedUrl, { cache: "no-store" });
+      if (!res.ok) throw new Error(`生成済み画像が未作成です (${res.status})`);
+
+      const imageBlob = await res.blob();
+      if (!imageBlob || imageBlob.size === 0) {
+        throw new Error("生成済み画像が空です");
+      }
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(imageBlob);
+      link.download = `map-latest-${new Date().toISOString().slice(0, 10)}.png`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+
+      statusIndicator.textContent = "最終更新: " + new Date().toLocaleTimeString();
+      console.log("生成済み画像を保存しました");
+      return;
+    } catch (e) {
+      console.warn("生成済み画像の取得に失敗:", e);
     }
 
-    statusIndicator.textContent = "画像を処理中... (SVGシリアライズ中)";
-    
+    // ローカル開発中のみ旧方式での簡易保存を許可
+    const isLocal = location.hostname === "127.0.0.1" || location.hostname === "localhost";
+    if (!isLocal) {
+      alert("生成済み画像が見つかりません。GitHub Actions の Render Map Image を実行後に再試行してください。");
+      statusIndicator.textContent = "データ同期中...";
+      return;
+    }
+
     try {
-        // SVGの全体サイズを取得
-        let width = 5000;
-        let height = 2500;
-        
-        const viewBox = svg.getAttribute("viewBox");
-        if (viewBox) {
-            const parts = viewBox.split(" ");
-            width = parseFloat(parts[2]);
-            height = parseFloat(parts[3]);
-        }
-        
-        console.log(`キャンバスサイズ: ${width}x${height}`);
-        
-        // SVGをシリアライズ
-        const svgString = new XMLSerializer().serializeToString(svg);
-        console.log(`SVGシリアライズ完了: ${svgString.length} bytes`);
-        
-        // Base64エンコード
-        const base64String = btoa(unescape(encodeURIComponent(svgString)));
-        const dataUrl = "data:image/svg+xml;base64," + base64String;
-        
-        statusIndicator.textContent = "画像を処理中... (レンダリング中)";
-        
-        // Canvasを作成
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d", { alpha: false });
-        
-        if (!ctx) {
-            throw new Error("Canvasコンテキスト取得失敗");
-        }
-        
-        // 背景を白で塗りつぶし
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, width, height);
-        
-        // SVGを画像として読み込んでCanvasに描画
-        const img = new Image();
-        let loadTimeout;
-        
-        img.onload = () => {
-            clearTimeout(loadTimeout);
-            try {
-                console.log("SVGをCanvasに描画中...");
-                ctx.drawImage(img, 0, 0);
-                
-                statusIndicator.textContent = "画像を処理中... (PNG生成中)";
-                
-                // PNGとしてダウンロード
-                canvas.toBlob((pngBlob) => {
-                    try {
-                        if (!pngBlob) throw new Error("PNG生成失敗");
-                        
-                        const link = document.createElement("a");
-                        const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
-                        link.download = `map-${timestamp}.png`;
-                        link.href = URL.createObjectURL(pngBlob);
-                        link.click();
-                        URL.revokeObjectURL(link.href);
-                        
-                        statusIndicator.textContent = "データ同期中...";
-                        console.log("画像を保存しました");
-                    } catch (e) {
-                        console.error("ダウンロードエラー:", e);
-                        alert("ダウンロードに失敗しました");
-                        statusIndicator.textContent = "データ同期中...";
-                    }
-                }, "image/png");
-                
-            } catch (e) {
-                console.error("Canvas描画エラー:", e);
-                alert("Canvas描画に失敗しました: " + e.message);
-                statusIndicator.textContent = "データ同期中...";
-            }
-        };
-        
-        img.onerror = (error) => {
-            clearTimeout(loadTimeout);
-            console.error("SVG読み込みエラー:", error);
-            alert("SVGのレンダリングに失敗しました。画面を再度読み込んで試してください。");
-            statusIndicator.textContent = "データ同期中...";
-        };
-        
-        // タイムアウト: 120秒（2分）に延長
-        loadTimeout = setTimeout(() => {
-            img.src = "";
-            console.error("SVG読み込みタイムアウト");
-            alert("SVGのレンダリングがタイムアウトしました。しばらく待ってからもう一度試してください。");
-            statusIndicator.textContent = "データ同期中...";
-        }, 120000);
-        
-        statusIndicator.textContent = "画像を処理中... (SVG読み込み中)";
-        img.src = dataUrl;
-        
+      statusIndicator.textContent = "画像を処理中... (ローカル簡易保存)";
+      await downloadMapImageLegacy();
+      statusIndicator.textContent = "最終更新: " + new Date().toLocaleTimeString();
     } catch (e) {
-        console.error("画像保存エラー:", e);
-        alert("画像保存に失敗しました: " + e.message);
-        statusIndicator.textContent = "データ同期中...";
+      console.error("ローカル簡易保存エラー:", e);
+      alert("画像保存に失敗しました: " + e.message);
+      statusIndicator.textContent = "データ同期中...";
+    }
+}
+
+async function downloadMapImageLegacy() {
+    const svg = document.getElementById("mapSvg");
+    if (!svg) throw new Error("地図が見つかりません");
+
+    let width = 5000;
+    let height = 2500;
+    const viewBox = svg.getAttribute("viewBox");
+    if (viewBox) {
+      const parts = viewBox.split(" ");
+      width = parseFloat(parts[2]);
+      height = parseFloat(parts[3]);
+    }
+
+    const svgString = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) throw new Error("Canvasコンテキスト取得失敗");
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("SVG読み込みタイムアウト")), 45000);
+        img.onload = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+        img.onerror = () => {
+          clearTimeout(timeout);
+          reject(new Error("SVG読み込みエラー"));
+        };
+        img.src = svgUrl;
+      });
+
+      ctx.drawImage(img, 0, 0);
+      const pngBlob = await new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error("PNG生成失敗"));
+            return;
+          }
+          resolve(blob);
+        }, "image/png");
+      });
+
+      const link = document.createElement("a");
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
+      link.download = `map-local-${timestamp}.png`;
+      link.href = URL.createObjectURL(pngBlob);
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } finally {
+      URL.revokeObjectURL(svgUrl);
     }
 }
 
