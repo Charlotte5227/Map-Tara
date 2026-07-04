@@ -2,7 +2,7 @@ name: Render Map Image
 
 concurrency:
   group: render-map-image-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 on:
   push:
