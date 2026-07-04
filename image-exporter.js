@@ -157,6 +157,72 @@
     return msg.includes("generated/Base.png") || msg.includes("generated/map-base.png");
   }
 
+  function cloneBaseOnlySvg(svg) {
+    const svgNS = "http://www.w3.org/2000/svg";
+    const clone = svg.cloneNode(true);
+
+    const removeSelectors = [
+      "#labels-layer",
+      "#numbers-layer",
+      "#bg-layer-top",
+      "#bg-layer-bottom",
+      "#date-layer",
+      "image",
+      "text"
+    ];
+    for (const selector of removeSelectors) {
+      clone.querySelectorAll(selector).forEach((node) => node.remove());
+    }
+
+    clone.querySelectorAll(".prov").forEach((prov) => {
+      prov.style.opacity = "1";
+      prov.style.fillOpacity = "1";
+      prov.style.strokeOpacity = "1";
+    });
+
+    if (!clone.getAttribute("xmlns")) {
+      clone.setAttribute("xmlns", svgNS);
+    }
+
+    return clone;
+  }
+
+  async function renderBaseOnlyFromSvg(ctx, svg, width, height, sourceViewBox) {
+    const svgNS = "http://www.w3.org/2000/svg";
+    const clone = cloneBaseOnlySvg(svg);
+    clone.setAttribute("viewBox", `${sourceViewBox.x} ${sourceViewBox.y} ${sourceViewBox.w} ${sourceViewBox.h}`);
+    clone.setAttribute("width", String(width));
+    clone.setAttribute("height", String(height));
+    clone.setAttribute("preserveAspectRatio", "none");
+
+    const serialized = new XMLSerializer().serializeToString(clone);
+    const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+
+    try {
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("Base SVG読み込みタイムアウト")), 45000);
+        img.onload = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+        img.onerror = () => {
+          clearTimeout(timeout);
+          reject(new Error("Base SVG読み込みエラー"));
+        };
+        img.src = objectUrl;
+      });
+
+      ctx.save();
+      ctx.globalAlpha = 1;
+      ctx.drawImage(img, 0, 0, width, height);
+      ctx.restore();
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
   function downloadBlob(blob, fileName) {
     const link = document.createElement("a");
     const blobUrl = URL.createObjectURL(blob);
@@ -262,17 +328,27 @@
       ctx.fillRect(0, 0, width, height);
 
       // Base(色付き地図) -> 背景画像群 -> ラベル群
-      await drawLayerWithFallbackUrls(
-        ctx,
-        [
-          PREGENERATED_MAP_ASSETS.base,
-          assetUrl("generated/map-base.png")
-        ],
-        width,
-        height,
-        1,
-        sourceViewBox
-      );
+      try {
+        await drawLayerWithFallbackUrls(
+          ctx,
+          [
+            PREGENERATED_MAP_ASSETS.base,
+            assetUrl("generated/map-base.png")
+          ],
+          width,
+          height,
+          1,
+          sourceViewBox
+        );
+      } catch (e) {
+        if (!isMissingPreRenderedAssetError(e)) {
+          throw e;
+        }
+        console.warn("Baseの事前生成画像が未配備のため、SVGからBaseのみを生成します。", e);
+        const svg = getSvg();
+        if (!svg) throw e;
+        await renderBaseOnlyFromSvg(ctx, svg, width, height, sourceViewBox);
+      }
 
       const activeBgMaps = getActiveBgMaps();
       for (const type of ["topo", "climate", "region", "continent"]) {
