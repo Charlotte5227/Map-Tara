@@ -193,6 +193,22 @@
     "lockCenter": false
   },
   {
+    "type": "country",
+    "name": "ロニェート共和国",
+    "color": "#ff4444",
+    "provinces": [
+      "path162",
+      "path160",
+      "path159",
+      "path158"
+    ],
+    "labelText": "ロニェート共和国",
+    "labelFontSize": 18,
+    "labelX": "773.559326171875",
+    "labelY": "1449.618408203125",
+    "lockCenter": false
+  },
+  {
     "type": "provNumber",
     "provId": "path158",
     "text": "1",
