@@ -59,14 +59,14 @@
     "color": "#f5ec00",
     "provinces": [
       "path195",
+      "path187",
       "path196",
-      "path189",
-      "path187"
+      "path189"
     ],
     "labelText": "ルプル帝国",
     "labelFontSize": "21",
-    "labelX": "2002.703739675579",
-    "labelY": "749.5500330288339",
+    "labelX": "2006.0146628781688",
+    "labelY": "750.0303320658782",
     "lockCenter": false
   },
   {
@@ -74,18 +74,19 @@
     "name": "ヴェレラ・テレラ・ナスぺ・コ・テーレ共和国",
     "color": "#93e3fd",
     "provinces": [
-      "path185",
       "path184",
       "path183",
       "path181",
       "path268",
       "path189",
-      "path267"
+      "path267",
+      "path185",
+      "path269"
     ],
     "labelText": "ヴェレラ・テレラ・ナスぺ・コ・テーレ・ルプレ共和国",
     "labelFontSize": 18,
-    "labelX": "1599.8449835920205",
-    "labelY": "842.4250785973156",
+    "labelX": "1606.527514098112",
+    "labelY": "838.1464499126389",
     "lockCenter": false
   },
   {
@@ -520,19 +521,6 @@
     "labelFontSize": 18,
     "labelX": "2252.943802420385",
     "labelY": "913.4745429348231",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
-    "name": "ヨヨ王国",
-    "color": "#ffa57d",
-    "provinces": [
-      "path269"
-    ],
-    "labelText": "ヨヨ王国",
-    "labelFontSize": 18,
-    "labelX": "1554.4860229492188",
-    "labelY": "1244.3361643783403",
     "lockCenter": false
   },
   {
@@ -1453,8 +1441,8 @@
     "provId": "path269",
     "text": "106",
     "fontSize": "20",
-    "x": "1554.4860229492188",
-    "y": "1216.4689359664917"
+    "x": "1558.956845070568",
+    "y": "1214.233524905817"
   },
   {
     "type": "provNumber",
@@ -1563,5 +1551,12 @@
     "fontSize": 18,
     "x": "1887.751871384457",
     "y": "1417.7423797524268"
+  },
+  {
+    "type": "freeLabel",
+    "text": "ヴェレラ共和国領",
+    "fontSize": 18,
+    "x": "1550.5465696195606",
+    "y": "1253.527394026285"
   }
 ]
