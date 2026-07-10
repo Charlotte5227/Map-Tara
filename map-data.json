@@ -159,9 +159,9 @@
       "path186"
     ],
     "labelText": "ビィスレイア共和国",
-    "labelFontSize": "14",
-    "labelX": "1799.8712546325185",
-    "labelY": "769.4960411965684",
+    "labelFontSize": "18",
+    "labelX": "1792.2069880639306",
+    "labelY": "784.8245743337444",
     "lockCenter": false
   },
   {
@@ -459,7 +459,7 @@
       "path181"
     ],
     "labelText": "ロイェミ王国",
-    "labelFontSize": "12",
+    "labelFontSize": "16",
     "labelX": "420.6062415432216",
     "labelY": "622.8730267516924",
     "lockCenter": false
@@ -472,7 +472,7 @@
       "path178"
     ],
     "labelText": "ロイェーヨ王国",
-    "labelFontSize": "12",
+    "labelFontSize": "15",
     "labelX": "463.57337951660156",
     "labelY": "721.9071383151436",
     "lockCenter": false
