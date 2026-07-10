@@ -558,21 +558,6 @@
     "lockCenter": false
   },
   {
-    "type": "country",
-    "name": "アルカディア共和国",
-    "color": "#ff8c82",
-    "provinces": [
-      "path226",
-      "path234",
-      "path233"
-    ],
-    "labelText": "アルカディア共和国",
-    "labelFontSize": 18,
-    "labelX": "2795.7139553309134",
-    "labelY": "1519.7808543524884",
-    "lockCenter": false
-  },
-  {
     "type": "provNumber",
     "provId": "path158",
     "text": "1",
