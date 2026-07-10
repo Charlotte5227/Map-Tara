@@ -96,12 +96,13 @@
     "name": "カリロンゴ国",
     "color": "#ffb5af",
     "provinces": [
-      "path278"
+      "path278",
+      "path279"
     ],
     "labelText": "カリロンゴ国",
     "labelFontSize": 18,
-    "labelX": "1902",
-    "labelY": "2107.5",
+    "labelX": "1860.5",
+    "labelY": "2104.0001220703125",
     "lockCenter": false
   },
   {
