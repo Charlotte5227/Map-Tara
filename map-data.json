@@ -61,12 +61,14 @@
       "path195",
       "path187",
       "path196",
-      "path189"
+      "path189",
+      "path188",
+      "path199"
     ],
     "labelText": "ルプル帝国",
     "labelFontSize": "21",
-    "labelX": "2006.0146628781688",
-    "labelY": "750.0303320658782",
+    "labelX": "2062.1769336955876",
+    "labelY": "796.4587928335284",
     "lockCenter": false
   },
   {
@@ -208,19 +210,6 @@
     "labelFontSize": 18,
     "labelX": "3938.380004217579",
     "labelY": "1571.1801240593602",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
-    "name": "ミルト王国",
-    "color": "#74a7fe",
-    "provinces": [
-      "path188"
-    ],
-    "labelText": "ミルト王国",
-    "labelFontSize": 18,
-    "labelX": "1900.0305530641645",
-    "labelY": "817.2274846796769",
     "lockCenter": false
   },
   {
@@ -512,19 +501,6 @@
   },
   {
     "type": "country",
-    "name": "ミニェミ王国",
-    "color": "#ff6a00",
-    "provinces": [
-      "path199"
-    ],
-    "labelText": "ミニェミ王国",
-    "labelFontSize": 18,
-    "labelX": "2252.943802420385",
-    "labelY": "913.4745429348231",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
     "name": "マキルス産業連邦",
     "color": "#53d5fd",
     "provinces": [
@@ -547,8 +523,8 @@
     ],
     "labelText": "ケルス連合",
     "labelFontSize": 18,
-    "labelX": "2095.5107421875",
-    "labelY": "453.0785827636719",
+    "labelX": "2087.846475618912",
+    "labelY": "479.9035157537299",
     "lockCenter": false
   },
   {
