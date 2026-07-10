@@ -59,12 +59,14 @@
     "color": "#f5ec00",
     "provinces": [
       "path195",
-      "path196"
+      "path196",
+      "path189",
+      "path187"
     ],
     "labelText": "ルプル帝国",
-    "labelFontSize": 18,
-    "labelX": "2069.5863647460938",
-    "labelY": "802.5486450195312",
+    "labelFontSize": "21",
+    "labelX": "2002.703739675579",
+    "labelY": "749.5500330288339",
     "lockCenter": false
   },
   {
@@ -74,12 +76,16 @@
     "provinces": [
       "path185",
       "path184",
-      "path183"
+      "path183",
+      "path181",
+      "path268",
+      "path189",
+      "path267"
     ],
-    "labelText": "ヴェレラ・テレラ・ナスぺ・コ・テーレ共和国",
+    "labelText": "ヴェレラ・テレラ・ナスぺ・コ・テーレ・ルプレ共和国",
     "labelFontSize": 18,
-    "labelX": "1585.596074086876",
-    "labelY": "847.4178480402018",
+    "labelX": "1599.8449835920205",
+    "labelY": "842.4250785973156",
     "lockCenter": false
   },
   {
@@ -492,19 +498,6 @@
   },
   {
     "type": "country",
-    "name": "ニェミ大公国",
-    "color": "#53d5fd",
-    "provinces": [
-      "path229"
-    ],
-    "labelText": "ニェミ大公国",
-    "labelFontSize": 18,
-    "labelX": "2867.1035428995656",
-    "labelY": "1373.2058148708916",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
     "name": "ミイヤ公国",
     "color": "#ed719e",
     "provinces": [
@@ -540,6 +533,79 @@
     "labelFontSize": 18,
     "labelX": "1554.4860229492188",
     "labelY": "1244.3361643783403",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "マキルス産業連邦",
+    "color": "#53d5fd",
+    "provinces": [
+      "path227",
+      "path228",
+      "path229"
+    ],
+    "labelText": "マキルス産業連邦",
+    "labelFontSize": 18,
+    "labelX": "2798.0045166015625",
+    "labelY": "1356.0825805664062",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ケルス連合",
+    "color": "#96d35f",
+    "provinces": [
+      "path287"
+    ],
+    "labelText": "ケルス連合",
+    "labelFontSize": 18,
+    "labelX": "2095.5107421875",
+    "labelY": "453.0785827636719",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ファリクザイ首長国",
+    "color": "#669c35",
+    "provinces": [
+      "path207",
+      "path206",
+      "path208"
+    ],
+    "labelText": "ファリクザイ首長国",
+    "labelFontSize": 18,
+    "labelX": "2448.6913135746845",
+    "labelY": "1100.3041495237428",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "水信簾王国",
+    "color": "#3a88fe",
+    "provinces": [
+      "path209",
+      "path210",
+      "path213"
+    ],
+    "labelText": "水信簾王国",
+    "labelFontSize": "21",
+    "labelX": "2323.176948069227",
+    "labelY": "1212.0347309060578",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "アルカディア共和国",
+    "color": "#ff8c82",
+    "provinces": [
+      "path226",
+      "path234",
+      "path233"
+    ],
+    "labelText": "アルカディア共和国",
+    "labelFontSize": 18,
+    "labelX": "2795.7139553309134",
+    "labelY": "1519.7808543524884",
     "lockCenter": false
   },
   {
@@ -1372,7 +1438,7 @@
     "text": "104",
     "fontSize": "20",
     "x": "1874.4514770507812",
-    "y": "1380.5374755859375"
+    "y": "1383.1574713683583"
   },
   {
     "type": "provNumber",
@@ -1483,5 +1549,19 @@
     "fontSize": 18,
     "x": "2711.3675526578445",
     "y": "1402.1236087963923"
+  },
+  {
+    "type": "freeLabel",
+    "text": "ヴェレラ共和国領",
+    "fontSize": 18,
+    "x": "1896.9517805634791",
+    "y": "1236.1887453167574"
+  },
+  {
+    "type": "freeLabel",
+    "text": "ヴェレラ共和国領",
+    "fontSize": 18,
+    "x": "1887.751871384457",
+    "y": "1417.7423797524268"
   }
 ]
