@@ -82,13 +82,13 @@
       "path268",
       "path189",
       "path267",
-      "path185",
-      "path269"
+      "path269",
+      "path185"
     ],
     "labelText": "ヴェレラ・テレラ・ナスぺ・コ・テーレ・ルプレ共和国",
     "labelFontSize": 18,
-    "labelX": "1606.527514098112",
-    "labelY": "838.1464499126389",
+    "labelX": "1606.6601341174432",
+    "labelY": "845.7565719068241",
     "lockCenter": false
   },
   {
@@ -215,71 +215,6 @@
   },
   {
     "type": "country",
-    "name": "ローミョン連合共和国",
-    "color": "#e32400",
-    "provinces": [
-      "path162"
-    ],
-    "labelText": "ローミョン連合共和国",
-    "labelFontSize": 18,
-    "labelX": "741.5521802356523",
-    "labelY": "1360.5426163426537",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
-    "name": "ロニェート共和国",
-    "color": "#e32400",
-    "provinces": [
-      "path168"
-    ],
-    "labelText": "ロニェート共和国",
-    "labelFontSize": 18,
-    "labelX": "534.9751733889048",
-    "labelY": "1062.6868015777836",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
-    "name": "ローチェン革命共和国",
-    "color": "#e32400",
-    "provinces": [
-      "path160"
-    ],
-    "labelText": "ローチェン革命共和国",
-    "labelFontSize": 18,
-    "labelX": "842.4299409538913",
-    "labelY": "1430.3393591275333",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
-    "name": "ロイ革命共和国",
-    "color": "#e32400",
-    "provinces": [
-      "path159"
-    ],
-    "labelText": "ロイ革命共和国",
-    "labelFontSize": 18,
-    "labelX": "884.8865602165866",
-    "labelY": "1593.270446444727",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
-    "name": "ロニーゴ革命連合共和国",
-    "color": "#e32400",
-    "provinces": [
-      "path158"
-    ],
-    "labelText": "ロニーゴ革命連合共和国",
-    "labelFontSize": 18,
-    "labelX": "725.1679077148438",
-    "labelY": "1578.5680541992188",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
     "name": "ニーヨ王国",
     "color": "#583400",
     "provinces": [
@@ -358,19 +293,6 @@
   },
   {
     "type": "country",
-    "name": "ロニェナ共和国",
-    "color": "#e32400",
-    "provinces": [
-      "path167"
-    ],
-    "labelText": "ロニェナ共和国",
-    "labelFontSize": 18,
-    "labelX": "640.4408988952637",
-    "labelY": "1047.6948471069336",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
     "name": "ロトニェ革命共和国",
     "color": "#e32400",
     "provinces": [
@@ -393,19 +315,6 @@
     "labelFontSize": 18,
     "labelX": "403.6963055893901",
     "labelY": "774.0043964230073",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
-    "name": "バロル共和国",
-    "color": "#e32400",
-    "provinces": [
-      "path175"
-    ],
-    "labelText": "バロル共和国",
-    "labelFontSize": 18,
-    "labelX": "541.0628051757812",
-    "labelY": "805.0291519165039",
     "lockCenter": false
   },
   {
@@ -556,6 +465,73 @@
     "labelFontSize": "21",
     "labelX": "2323.176948069227",
     "labelY": "1212.0347309060578",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "バロル共和国",
+    "color": "#f5ec00",
+    "provinces": [
+      "path175"
+    ],
+    "labelText": "バロル共和国",
+    "labelFontSize": 18,
+    "labelX": "541.0628051757812",
+    "labelY": "805.0291519165039",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ロニャート統一王国",
+    "color": "#96d35f",
+    "provinces": [
+      "path168",
+      "path167"
+    ],
+    "labelText": "ロニャート統一王国",
+    "labelFontSize": 18,
+    "labelX": "576.5334739685059",
+    "labelY": "1074.9103717011765",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ローミョン王国",
+    "color": "#5e30eb",
+    "provinces": [
+      "path162"
+    ],
+    "labelText": "ローミョン王国",
+    "labelFontSize": 18,
+    "labelX": "775.5429151248627",
+    "labelY": "1358.269046478759",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ロチェット統一王国",
+    "color": "#ff8647",
+    "provinces": [
+      "path160",
+      "path159"
+    ],
+    "labelText": "ロチェット統一王国",
+    "labelFontSize": 18,
+    "labelX": "851.1608757530919",
+    "labelY": "1508.0013443334415",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ロニーゴ王国",
+    "color": "#b18cfe",
+    "provinces": [
+      "path158"
+    ],
+    "labelText": "ロニーゴ王国",
+    "labelFontSize": 18,
+    "labelX": "718.120360158122",
+    "labelY": "1616.1549745017346",
     "lockCenter": false
   },
   {
