@@ -58,17 +58,17 @@
     "name": "ルプル帝国",
     "color": "#f5ec00",
     "provinces": [
-      "path195",
       "path187",
       "path196",
-      "path189",
       "path188",
-      "path199"
+      "path199",
+      "path195",
+      "path189"
     ],
     "labelText": "ルプル帝国",
     "labelFontSize": "21",
-    "labelX": "2062.1769336955876",
-    "labelY": "796.4587928335284",
+    "labelX": "2064.123671071598",
+    "labelY": "795.6577259587784",
     "lockCenter": false
   },
   {
@@ -80,15 +80,15 @@
       "path183",
       "path181",
       "path268",
-      "path189",
       "path267",
       "path269",
-      "path185"
+      "path185",
+      "path195"
     ],
     "labelText": "ヴェレラ・テレラ・ナスぺ・コ・テーレ・ルプレ共和国",
     "labelFontSize": 18,
-    "labelX": "1606.6601341174432",
-    "labelY": "845.7565719068241",
+    "labelX": "1612.9366783653966",
+    "labelY": "845.7565777568391",
     "lockCenter": false
   },
   {
@@ -398,19 +398,6 @@
   },
   {
     "type": "country",
-    "name": "ミイヤ公国",
-    "color": "#ed719e",
-    "provinces": [
-      "path193"
-    ],
-    "labelText": "ミイヤ公国",
-    "labelFontSize": 18,
-    "labelX": "2128.065904331467",
-    "labelY": "631.9849297214269",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
     "name": "マキルス産業連邦",
     "color": "#53d5fd",
     "provinces": [
@@ -532,6 +519,58 @@
     "labelFontSize": 18,
     "labelX": "718.120360158122",
     "labelY": "1616.1549745017346",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ヨーコ自治領",
+    "color": "#ff4444",
+    "provinces": [
+      "path265"
+    ],
+    "labelText": "ヨーコ自治領",
+    "labelFontSize": 18,
+    "labelX": "1767.9633465361671",
+    "labelY": "1516.23718359219",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "正当ミョヤフィ帝国",
+    "color": "#ffc4ab",
+    "provinces": [
+      "path193"
+    ],
+    "labelText": "正当ミョヤフィ帝国",
+    "labelFontSize": 18,
+    "labelX": "2137.35498046875",
+    "labelY": "632.9964401683868",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "東ミョヤフィ帝国",
+    "color": "#fff995",
+    "provinces": [
+      "path198"
+    ],
+    "labelText": "東ミョヤフィ帝国",
+    "labelFontSize": 18,
+    "labelX": "2296.966838995108",
+    "labelY": "713.8604702203038",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "南ミョヤフィ帝国",
+    "color": "#fec700",
+    "provinces": [
+      "path197"
+    ],
+    "labelText": "南ミョヤフィ帝国",
+    "labelFontSize": 18,
+    "labelX": "2268.3960506938897",
+    "labelY": "771.1078387860673",
     "lockCenter": false
   },
   {
@@ -1348,7 +1387,7 @@
     "text": "102",
     "fontSize": "20",
     "x": "1770.0652465820312",
-    "y": "1480.5048828125"
+    "y": "1477.6147687138077"
   },
   {
     "type": "provNumber",
