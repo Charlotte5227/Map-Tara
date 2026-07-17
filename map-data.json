@@ -62,13 +62,13 @@
       "path196",
       "path188",
       "path199",
-      "path195",
-      "path189"
+      "path189",
+      "path195"
     ],
     "labelText": "ルプル帝国",
     "labelFontSize": "21",
-    "labelX": "2064.123671071598",
-    "labelY": "795.6577259587784",
+    "labelX": "2064.403924229046",
+    "labelY": "807.0079864404453",
     "lockCenter": false
   },
   {
@@ -82,13 +82,13 @@
       "path268",
       "path267",
       "path269",
-      "path185",
-      "path195"
+      "path195",
+      "path185"
     ],
     "labelText": "ヴェレラ・テレラ・ナスぺ・コ・テーレ・ルプレ共和国",
     "labelFontSize": 18,
-    "labelX": "1612.9366783653966",
-    "labelY": "845.7565777568391",
+    "labelX": "1607.4717416001586",
+    "labelY": "848.4189833375973",
     "lockCenter": false
   },
   {
@@ -571,6 +571,84 @@
     "labelFontSize": 18,
     "labelX": "2268.3960506938897",
     "labelY": "771.1078387860673",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ミオク公国",
+    "color": "#ffe4a8",
+    "provinces": [
+      "path192"
+    ],
+    "labelText": "ミオク公国",
+    "labelFontSize": 18,
+    "labelX": "2020.8546978399013",
+    "labelY": "585.5474639990078",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ミイニ王国",
+    "color": "#ffa57d",
+    "provinces": [
+      "path190"
+    ],
+    "labelText": "ミイニ王国",
+    "labelFontSize": 18,
+    "labelX": "1896.901459422736",
+    "labelY": "629.235449209",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ミイヨ大公国",
+    "color": "#b1dd8c",
+    "provinces": [
+      "path194"
+    ],
+    "labelText": "ミイヨ大公国",
+    "labelFontSize": 18,
+    "labelX": "2116.330779688046",
+    "labelY": "759.0297687030829",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ミニーヨ騎士団領",
+    "color": "#3a88fe",
+    "provinces": [
+      "path200"
+    ],
+    "labelText": "ミニーヨ騎士団領",
+    "labelFontSize": 18,
+    "labelX": "2328.5993275992787",
+    "labelY": "958.3700012109531",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ミトォー王国",
+    "color": "#0042aa",
+    "provinces": [
+      "path191"
+    ],
+    "labelText": "ミトォー王国",
+    "labelFontSize": 18,
+    "labelX": "1906.9933095328724",
+    "labelY": "507.2287082367431",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ヨナ王国",
+    "color": "#6f7608",
+    "provinces": [
+      "path263"
+    ],
+    "labelText": "ヨナ王国",
+    "labelFontSize": 18,
+    "labelX": "1442.2113193109774",
+    "labelY": "1522.8854044466354",
     "lockCenter": false
   },
   {
