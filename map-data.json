@@ -67,8 +67,8 @@
     ],
     "labelText": "ルプル帝国",
     "labelFontSize": "21",
-    "labelX": "2064.403924229046",
-    "labelY": "807.0079864404453",
+    "labelX": "2063.072720366164",
+    "labelY": "795.0271563545202",
     "lockCenter": false
   },
   {
@@ -82,13 +82,12 @@
       "path268",
       "path267",
       "path269",
-      "path195",
       "path185"
     ],
     "labelText": "ヴェレラ・テレラ・ナスぺ・コ・テーレ・ルプレ共和国",
     "labelFontSize": 18,
-    "labelX": "1607.4717416001586",
-    "labelY": "848.4189833375973",
+    "labelX": "1636.7215721447246",
+    "labelY": "845.7565736618286",
     "lockCenter": false
   },
   {
@@ -336,13 +335,12 @@
     "name": "ロトイ王国",
     "color": "#fff995",
     "provinces": [
-      "path185",
       "path179"
     ],
     "labelText": "ロトイ王国",
     "labelFontSize": 18,
-    "labelX": "578.7781745744336",
-    "labelY": "704.5366979281973",
+    "labelX": "579.095834335961",
+    "labelY": "698.7514294024093",
     "lockCenter": false
   },
   {
@@ -650,6 +648,71 @@
     "labelFontSize": 18,
     "labelX": "1442.2113193109774",
     "labelY": "1522.8854044466354",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "イェナ王国",
+    "color": "#f9d3e0",
+    "provinces": [
+      "path237"
+    ],
+    "labelText": "イェナ王国",
+    "labelFontSize": 18,
+    "labelX": "3561.659432822523",
+    "labelY": "1299.8609215489591",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "イェヤ王国",
+    "color": "#ffe4a8",
+    "provinces": [
+      "path238"
+    ],
+    "labelText": "イェヤ王国",
+    "labelFontSize": 18,
+    "labelX": "3487.4795298225963",
+    "labelY": "1147.150709353316",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "イェトー王国",
+    "color": "#fffbb9",
+    "provinces": [
+      "path249"
+    ],
+    "labelText": "イェトー王国",
+    "labelFontSize": 18,
+    "labelX": "3692.4375",
+    "labelY": "1398.4485713483427",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "イェイェ王国",
+    "color": "#00c7fc",
+    "provinces": [
+      "path248"
+    ],
+    "labelText": "イェイェ王国",
+    "labelFontSize": 18,
+    "labelX": "3562.4894169329073",
+    "labelY": "1435.4521987476287",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ミェニヤ王国",
+    "color": "#ffe4a8",
+    "provinces": [
+      "path220"
+    ],
+    "labelText": "ミェニヤ王国",
+    "labelFontSize": 18,
+    "labelX": "2750.4918134890427",
+    "labelY": "1197.3371256380417",
     "lockCenter": false
   },
   {
