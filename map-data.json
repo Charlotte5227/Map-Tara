@@ -66,9 +66,9 @@
       "path195"
     ],
     "labelText": "ルプル帝国",
-    "labelFontSize": "21",
-    "labelX": "2063.072720366164",
-    "labelY": "795.0271563545202",
+    "labelFontSize": "33",
+    "labelX": "2054.1980308069587",
+    "labelY": "877.118034777169",
     "lockCenter": false
   },
   {
@@ -79,15 +79,12 @@
       "path184",
       "path183",
       "path181",
-      "path268",
-      "path267",
-      "path269",
       "path185"
     ],
     "labelText": "ヴェレラ・テレラ・ナスぺ・コ・テーレ・ルプレ共和国",
-    "labelFontSize": 18,
-    "labelX": "1636.7215721447246",
-    "labelY": "845.7565736618286",
+    "labelFontSize": "24",
+    "labelX": "1529.6937968220575",
+    "labelY": "840.599314826746",
     "lockCenter": false
   },
   {
@@ -455,19 +452,6 @@
   },
   {
     "type": "country",
-    "name": "バロル共和国",
-    "color": "#f5ec00",
-    "provinces": [
-      "path175"
-    ],
-    "labelText": "バロル共和国",
-    "labelFontSize": 18,
-    "labelX": "541.0628051757812",
-    "labelY": "805.0291519165039",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
     "name": "ロニャート統一王国",
     "color": "#96d35f",
     "provinces": [
@@ -639,19 +623,6 @@
   },
   {
     "type": "country",
-    "name": "ヨナ王国",
-    "color": "#6f7608",
-    "provinces": [
-      "path263"
-    ],
-    "labelText": "ヨナ王国",
-    "labelFontSize": 18,
-    "labelX": "1442.2113193109774",
-    "labelY": "1522.8854044466354",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
     "name": "イェナ王国",
     "color": "#f9d3e0",
     "provinces": [
@@ -713,6 +684,75 @@
     "labelFontSize": 18,
     "labelX": "2750.4918134890427",
     "labelY": "1197.3371256380417",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "イェイミ共和国",
+    "color": "#ff4444",
+    "provinces": [
+      "path244"
+    ],
+    "labelText": "イェイミ共和国",
+    "labelFontSize": 18,
+    "labelX": "3728.9957435534784",
+    "labelY": "1503.928856992874",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "ヴィッサリ共和国",
+    "color": "#d29d00",
+    "provinces": [
+      "path251"
+    ],
+    "labelText": "ヴィッサリ共和国",
+    "labelFontSize": 18,
+    "labelX": "3777.0159744408948",
+    "labelY": "1688.4200057252147",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "イェイゴ帝国",
+    "color": "#f5ec00",
+    "provinces": [
+      "path252"
+    ],
+    "labelText": "イェイゴ帝国",
+    "labelFontSize": 18,
+    "labelX": "3703.5239616613417",
+    "labelY": "1817.959941827451",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "バロル共和国",
+    "color": "#f5ec00",
+    "provinces": [
+      "path175"
+    ],
+    "labelText": "バロル共和国",
+    "labelFontSize": 18,
+    "labelX": "541.0628051757812",
+    "labelY": "805.0291519165039",
+    "lockCenter": false
+  },
+  {
+    "type": "country",
+    "name": "リンドニナム連邦共和国",
+    "color": "#874efe",
+    "provinces": [
+      "path268",
+      "path267",
+      "path269",
+      "path263",
+      "path264"
+    ],
+    "labelText": "リンドニナム連邦共和国",
+    "labelFontSize": "37",
+    "labelX": "1658.9889939768245",
+    "labelY": "1347.7555548878142",
     "lockCenter": false
   },
   {
@@ -1659,21 +1699,21 @@
   },
   {
     "type": "freeLabel",
-    "text": "ヴェレラ共和国領",
+    "text": "",
     "fontSize": 18,
     "x": "1896.9517805634791",
     "y": "1236.1887453167574"
   },
   {
     "type": "freeLabel",
-    "text": "ヴェレラ共和国領",
+    "text": "",
     "fontSize": 18,
     "x": "1887.751871384457",
     "y": "1417.7423797524268"
   },
   {
     "type": "freeLabel",
-    "text": "ヴェレラ共和国領",
+    "text": "",
     "fontSize": 18,
     "x": "1550.5465696195606",
     "y": "1253.527394026285"
