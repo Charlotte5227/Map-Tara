@@ -756,6 +756,21 @@
     "lockCenter": false
   },
   {
+    "type": "country",
+    "name": "ルーセツカヤ帝国",
+    "color": "#38571a",
+    "provinces": [
+      "path223",
+      "path205",
+      "path204"
+    ],
+    "labelText": "ルーセツカヤ帝国",
+    "labelFontSize": 18,
+    "labelX": "2686.419761824255",
+    "labelY": "1029.2236997735288",
+    "lockCenter": false
+  },
+  {
     "type": "provNumber",
     "provId": "path158",
     "text": "1",
