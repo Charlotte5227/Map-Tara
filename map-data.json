@@ -63,12 +63,16 @@
       "path188",
       "path199",
       "path189",
-      "path195"
+      "path195",
+      "path194",
+      "path192",
+      "path190",
+      "path200"
     ],
     "labelText": "ルプル帝国",
     "labelFontSize": "33",
-    "labelX": "2054.1980308069587",
-    "labelY": "877.118034777169",
+    "labelX": "2065.1799267656124",
+    "labelY": "788.3902459677797",
     "lockCenter": false
   },
   {
@@ -558,58 +562,6 @@
   },
   {
     "type": "country",
-    "name": "ミオク公国",
-    "color": "#ffe4a8",
-    "provinces": [
-      "path192"
-    ],
-    "labelText": "ミオク公国",
-    "labelFontSize": 18,
-    "labelX": "2020.8546978399013",
-    "labelY": "585.5474639990078",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
-    "name": "ミイニ王国",
-    "color": "#ffa57d",
-    "provinces": [
-      "path190"
-    ],
-    "labelText": "ミイニ王国",
-    "labelFontSize": 18,
-    "labelX": "1896.901459422736",
-    "labelY": "629.235449209",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
-    "name": "ミイヨ大公国",
-    "color": "#b1dd8c",
-    "provinces": [
-      "path194"
-    ],
-    "labelText": "ミイヨ大公国",
-    "labelFontSize": 18,
-    "labelX": "2116.330779688046",
-    "labelY": "759.0297687030829",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
-    "name": "ミニーヨ騎士団領",
-    "color": "#3a88fe",
-    "provinces": [
-      "path200"
-    ],
-    "labelText": "ミニーヨ騎士団領",
-    "labelFontSize": 18,
-    "labelX": "2328.5993275992787",
-    "labelY": "958.3700012109531",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
     "name": "ミトォー王国",
     "color": "#0042aa",
     "provinces": [
@@ -688,28 +640,16 @@
   },
   {
     "type": "country",
-    "name": "イェイミ共和国",
-    "color": "#ff4444",
-    "provinces": [
-      "path244"
-    ],
-    "labelText": "イェイミ共和国",
-    "labelFontSize": 18,
-    "labelX": "3728.9957435534784",
-    "labelY": "1503.928856992874",
-    "lockCenter": false
-  },
-  {
-    "type": "country",
     "name": "ヴィッサリ共和国",
     "color": "#d29d00",
     "provinces": [
-      "path251"
+      "path251",
+      "path244"
     ],
     "labelText": "ヴィッサリ共和国",
     "labelFontSize": 18,
-    "labelX": "3777.0159744408948",
-    "labelY": "1688.4200057252147",
+    "labelX": "3752.9998779296875",
+    "labelY": "1553.9989624023438",
     "lockCenter": false
   },
   {
@@ -1447,8 +1387,8 @@
     "provId": "path244",
     "text": "85",
     "fontSize": "20",
-    "x": "3724.003730773926",
-    "y": "1471.4807739257812"
+    "x": "3725.539734691096",
+    "y": "1476.0887856772913"
   },
   {
     "type": "provNumber",
