@@ -92,7 +92,7 @@
           });
         
         img.setAttribute("width", "5000");
-        img.setAttribute("height", "2500");
+        img.setAttribute("height", "2438");
         img.setAttribute("x", "0");
         img.setAttribute("y", "0");
         img.setAttribute("preserveAspectRatio", "none");
@@ -245,7 +245,7 @@
   let lastDataHash = "";
   let labelsVisible = true;
   let numbersVisible = false;
-  let viewBox = { x: 0, y: 0, w: 5000, h: 2500 };
+  let viewBox = { x: 0, y: 0, w: 5000, h: 2438 };
 
   function ensureLayer(svg, layerId) {
     let layer = svg.querySelector(`#${layerId}`);
@@ -263,7 +263,7 @@
 
   function updateViewBox(){
     const maxCx = 5000; const minCx = 0;
-    const maxCy = 2500; const minCy = 0;
+    const maxCy = 2438; const minCy = 0;
     
     let cx = viewBox.x + viewBox.w / 2;
     let cy = viewBox.y + viewBox.h / 2;
@@ -305,7 +305,7 @@
     const cy = viewBox.y + viewBox.h / 2;
     
     viewBox.w = 5000 / scale;
-    viewBox.h = 2500 / scale;
+    viewBox.h = 2438 / scale;
     viewBox.x = cx - viewBox.w / 2;
     viewBox.y = cy - viewBox.h / 2;
     updateViewBox();
@@ -513,6 +513,7 @@ async function downloadMapImage() {
   function getSvg() { return document.getElementById("mapSvg"); }
   let isDragging = false;
   let startX = 0, startY = 0;
+  let startViewBoxX = 0, startViewBoxY = 0;   // ← 追加
   let initialPinchDistance = null;
   let initialPinchViewBox = null;
 
@@ -542,6 +543,8 @@ async function downloadMapImage() {
     const pos = getPointerPos(e);
     startX = pos.x;
     startY = pos.y;
+    startViewBoxX = viewBox.x;   // ← 追加
+    startViewBoxY = viewBox.y;   // ← 追加
   }
 
   function handleMove(e) {
@@ -571,21 +574,19 @@ async function downloadMapImage() {
     }
 
     if (!isDragging) return;
-    
-    const pos = getPointerPos(e);
-    const dx = pos.x - startX;
-    const dy = pos.y - startY;
-    
-    startX = pos.x;
-    startY = pos.y;
 
     const svg = getSvg();
     if (!svg) return;
-    const scaleX = viewBox.w / svg.clientWidth;
-    const scaleY = viewBox.h / svg.clientHeight;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
 
-    viewBox.x -= dx * scaleX;
-    viewBox.y -= dy * scaleY;
+    const pos = getPointerPos(e);
+    const dx = pos.x - startX;
+    const dy = pos.y - startY;
+
+    // admin.js と同じ：縦横とも ctm.a で割る
+    viewBox.x = startViewBoxX - (dx / ctm.a);
+    viewBox.y = startViewBoxY - (dy / ctm.a);
     updateViewBox();
   }
 
