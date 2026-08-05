@@ -91,6 +91,44 @@
 
   function getSvgRoot() { return document.getElementById("mapSvg"); }
 
+  // 数字ラベルの次の連番を求める
+  function getNextProvNumber() {
+    let max = 0;
+    for (const fl of freeLabels) {
+      if (fl.type !== "provNumber") continue;
+      const n = parseInt(fl.text, 10);
+      if (Number.isFinite(n) && n > max) max = n;
+    }
+    return max + 1;
+  }
+
+  // 1プロビ1国：指定プロビを他国から取り上げる
+  function detachProvincesFromOtherCountries(ids, exceptCid) {
+    const affected = new Set();
+    for (const [cid, c] of countries.entries()) {
+      if (cid === exceptCid) continue;
+      for (const id of ids) {
+        if (c.ids.has(id)) { c.ids.delete(id); affected.add(cid); }
+      }
+    }
+
+    const emptiedNames = [];
+    for (const cid of affected) {
+      const c = countries.get(cid);
+      if (c.ids.size === 0) {
+        const labelEl = getSvgRoot().getElementById(c.labelId);
+        if (labelEl) labelEl.remove();
+        usedColors.delete(c.color);
+        countries.delete(cid);
+        emptiedNames.push(c.name);
+        if (activeCountryId === cid) activeCountryId = "";
+      } else if (!c.lockCenter) {
+        moveLabelToCountryCenter(c);
+      }
+    }
+    return { affectedCount: affected.size, emptiedNames };
+  }
+
   function updateStatus() {
     const status = document.getElementById("status");
     const c = activeCountryId ? countries.get(activeCountryId) : null;
@@ -239,6 +277,7 @@
     const cid = `c-${Date.now()}-${Math.floor(Math.random()*1e6)}`;
     const color = document.getElementById("colorInput").value;
     const ids = new Set(selectedIds);
+    const detached = detachProvincesFromOtherCountries(ids, null);   // ← 追加
     const { cx, cy } = computeGroupCenter(ids);
     const labelId = addLabel(name, cx, cy, DEFAULT_LABEL_SIZE);
 
@@ -254,6 +293,14 @@
     if (!activeCountryId || !countries.has(activeCountryId)) { alert("まず編集する国を選択してください。"); return; }
     if (selectedIds.size === 0) { alert("追加/削除したいプロビを選択してください。"); return; }
     const country = countries.get(activeCountryId);
+
+    // ← ここから追加：この国に「追加」されるプロビだけ他国から剥がす
+    const toAdd = [];
+    for (const id of selectedIds) {
+      if (!country.ids.has(id)) toAdd.push(id);
+    }
+    const detached = detachProvincesFromOtherCountries(toAdd, activeCountryId);
+    // ← ここまで
     for (const id of selectedIds) {
       const p = getSvgRoot().getElementById(id);
       if (country.ids.has(id)) { country.ids.delete(id); if (p) p.style.fill = "#FEF9DB"; } 
@@ -265,6 +312,9 @@
       countries.delete(activeCountryId); usedColors.delete(country.color); activeCountryId = ""; refreshCountrySelect();
     } else { if (!country.lockCenter) moveLabelToCountryCenter(country); }
     selectedIds.clear(); updateStatus();
+    if (detached.emptiedNames.length > 0) {
+      alert(`プロビを奪われて消滅した国: ${detached.emptiedNames.join("、")}`);
+    }
   });
 
   function buildExportArrayFromCountries() {
@@ -311,6 +361,9 @@
     activeCountryId = ""; freeLabels.length = 0; activeFreeLabelId = null;
     resetAllToWhite();
 
+    const ownedProvinces = new Set();   // ← 追加
+    let duplicateCount = 0;             // ← 追加
+
     jsonArray.forEach(item => {
       if (item.type === "metadata") return; 
       if (item.type === "freeLabel" || item.type === "provNumber") {
@@ -321,7 +374,17 @@
       }
       if (!item || !item.name || !item.color || !Array.isArray(item.provinces)) return;
       const cid = `c-${Date.now()}-${Math.floor(Math.random()*1e6)}`;
-      const ids = new Set(item.provinces); usedColors.add(item.color);
+
+      // ← ここから差し替え（元は const ids = new Set(item.provinces); usedColors.add(item.color); の1行）
+      const ids = new Set();
+      for (const pid of item.provinces) {
+        if (ownedProvinces.has(pid)) { duplicateCount++; continue; }
+        ownedProvinces.add(pid);
+        ids.add(pid);
+      }
+      if (ids.size === 0) return;
+      usedColors.add(item.color);
+      // ← ここまで
       const { cx, cy } = computeGroupCenter(ids);
       const labelX = (typeof item.labelX !== 'undefined' && item.labelX !== null) ? Number(item.labelX) : cx;
       const labelY = (typeof item.labelY !== 'undefined' && item.labelY !== null) ? Number(item.labelY) : cy;
@@ -331,6 +394,9 @@
       const country = { name: item.name, color: item.color, ids, labelId, labelText: item.labelText || item.name, labelFontSize: fontSize, lockCenter: !!item.lockCenter };
       countries.set(cid, country); repaintCountry(country);
     });
+    if (duplicateCount > 0) {
+      console.warn(`重複していたプロビ ${duplicateCount} 件を除外しました（先に登場した国が保持）。`);
+    }
     refreshCountrySelect(); updateStatus();
   }
 
@@ -620,8 +686,24 @@
   });
 
   document.getElementById("addProvinceNumbersBtn").addEventListener("click", () => {
-    if(!confirm("すべてのプロヴィンスに連番ラベルを自動生成しますか？")) return;
+    const existing = freeLabels.filter(fl => fl.type === "provNumber");
+    if (existing.length > 0) {
+      if (!confirm(`既存の数字ラベル ${existing.length} 個を削除してから作り直しますか？`)) return;
+      const svgRoot = getSvgRoot();
+      for (const fl of existing) {
+        const el = svgRoot.getElementById(fl.labelId);
+        if (el) el.remove();
+        if (activeFreeLabelId === fl.labelId) activeFreeLabelId = null;
+      }
+      for (let i = freeLabels.length - 1; i >= 0; i--) {
+        if (freeLabels[i].type === "provNumber") freeLabels.splice(i, 1);
+      }
+    } else if (!confirm("すべてのプロヴィンスに連番ラベルを自動生成しますか？")) {
+      return;
+    }
+
     const svg = getSvgRoot(); const provs = svg.querySelectorAll(".prov"); let count = 1;
+    // 以下は元のまま
     const fontSize = parseInt(document.getElementById("provLabelSize").value, 10); 
     provs.forEach(p => {
       const bb = p.getBBox(); const cx = bb.x + bb.width / 2; const cy = bb.y + bb.height / 2;
@@ -630,6 +712,64 @@
       count++;
     });
     alert(`${count - 1} 個の連番ラベルを生成しました。`); updateStatus();
+  });
+  document.getElementById("addSingleProvNumberBtn").addEventListener("click", () => {
+    const svg = getSvgRoot();
+    if (!svg) return;
+
+    const targetIds = Array.from(selectedIds);
+    if (targetIds.length > 1) {
+      alert(`プロビは1つだけ選択してください。（現在 ${targetIds.length} 個選択中）`);
+      return;
+    }
+
+    const input = prompt("数字ラベルの内容を入力してください", String(getNextProvNumber()));
+    if (input === null) return;
+    const value = input.trim();
+    if (!value) return;
+
+    const fontSize = parseInt(document.getElementById("provLabelSize").value, 10) || 14;
+
+    let x, y, provId = null;
+    if (targetIds.length === 1) {
+      provId = targetIds[0];
+      const p = svg.getElementById(provId);
+      if (!p) { alert("選択したプロビが見つかりません。"); return; }
+      const bb = p.getBBox();
+      x = bb.x + bb.width / 2;
+      y = bb.y + bb.height / 2;
+      p.classList.remove(SELECT_CLASS);
+      selectedIds.delete(provId);
+      restoreProvinceColor(provId);
+    } else {
+      const vb = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
+      x = vb && vb.width ? vb.x + vb.width / 2 : MAP_WIDTH / 2;
+      y = vb && vb.height ? vb.y + vb.height / 2 : MAP_HEIGHT / 2;
+    }
+
+    const labelId = addLabel(value, x, y, fontSize);
+    freeLabels.push({ type: "provNumber", provId, text: value, labelId, fontSize });
+    activeFreeLabelId = labelId; activeCountryId = "";
+    document.getElementById("countrySelect").value = "";
+    updateStatus();
+  });
+
+  document.getElementById("clearProvNumbersBtn").addEventListener("click", () => {
+    const targets = freeLabels.filter(fl => fl.type === "provNumber");
+    if (targets.length === 0) { alert("削除する数字ラベルがありません。"); return; }
+    if (!confirm(`${targets.length} 個の数字ラベルをすべて削除しますか？\n（自由ラベルは残ります）`)) return;
+
+    const svg = getSvgRoot();
+    for (const fl of targets) {
+      const el = svg.getElementById(fl.labelId);
+      if (el) el.remove();
+      if (activeFreeLabelId === fl.labelId) activeFreeLabelId = null;
+    }
+    for (let i = freeLabels.length - 1; i >= 0; i--) {
+      if (freeLabels[i].type === "provNumber") freeLabels.splice(i, 1);
+    }
+    updateStatus();
+    alert(`${targets.length} 個の数字ラベルを削除しました。`);
   });
 
   document.getElementById('provLabelSize').addEventListener('input', (e) => { document.getElementById('provLabelSizeVal').textContent = e.target.value; });
